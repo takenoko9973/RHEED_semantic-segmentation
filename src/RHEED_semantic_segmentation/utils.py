@@ -1,6 +1,8 @@
+import random
 from typing import Any
 
 import numpy as np
+import torch
 from albumentations.core.transforms_interface import BasicTransform
 from PIL import Image
 from torch.utils.data import Dataset
@@ -83,3 +85,11 @@ def split_dataset(
     val_dataset = SegmentationSubset(dataset, indices[train_size:], val_transform)
 
     return train_dataset, val_dataset
+
+
+def init_random_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)  # noqa: NPY002
+    torch.manual_seed(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
