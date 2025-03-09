@@ -1,0 +1,70 @@
+{
+    "name": "RHEED_semantic-segmantaion",
+    "dockerFile": "DockerFile",
+    "init": true,
+    "runArgs": [
+        "--gpus",
+        "all",
+        "--shm-size",
+        "6g"
+    ],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/home/user/micromamba/bin/python",
+                "python.terminal.activateEnvironment": true,
+                "[python]": {
+                    "editor.formatOnPaste": true,
+                    "editor.defaultFormatter": "charliermarsh.ruff",
+                    "editor.formatOnSave": true,
+                    "editor.codeActionsOnSave": {
+                        "source.fixAll": "explicit",
+                        "source.organizeImports": "explicit"
+                    }
+                },
+                "jupyter.notebookFileRoot": "${workspaceFolder}",
+                "ruff.lint.args": [
+                    "--config=pyproject.toml"
+                ]
+            },
+            "extensions": [
+                "ms-python.python",
+                "charliermarsh.ruff",
+                "KevinRose.vsc-python-indent",
+                "njpwerner.autodocstring",
+                "ms-toolsai.jupyter",
+                "VisualStudioExptTeam.vscodeintellicode",
+                "VisualStudioExptTeam.intellicode-api-usage-examples",
+                "ms-toolsai.datawrangler",
+                "analytic-signal.preview-tiff",
+                "mhutchie.git-graph",
+                "tamasfe.even-better-toml"
+            ]
+        }
+    },
+    // WSLg設定 : matplotlib表示用
+    "mounts": [
+        {
+            "source": "RHEED-segmantation-B4-thesis-ml_data",
+            "target": "${containerWorkspaceFolder}/data",
+            "type": "volume"
+        },
+        {
+            "source": "/run/desktop/mnt/host/wslg/.X11-unix",
+            "target": "/tmp/.X11-unix",
+            "type": "bind"
+        },
+        {
+            "source": "/run/desktop/mnt/host/wslg",
+            "target": "/mnt/wslg",
+            "type": "bind"
+        }
+    ],
+    "containerEnv": {
+        "DISPLAY": ":0",
+        "WAYLAND_DISPLAY": "wayland-0",
+        "QT_QPA_PLATFORM": "xcb",
+        "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir",
+        "PULSE_SERVER": "/mnt/wslg/PulseServer"
+    }
+}

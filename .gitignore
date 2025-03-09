@@ -1,0 +1,13 @@
+# Data
+data/*
+download/*
+!download/.gitkeep
+
+# Caches
+**/__pycache__/*
+.mypy_cache/*
+.pytest_cache/*
+.ruff_cache/*
+**/*.egg-info/*
+
+**/.env
