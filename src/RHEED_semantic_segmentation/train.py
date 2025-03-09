@@ -141,12 +141,12 @@ class SegmentationTrainer:
 
 
 def calc_IoU(cm: np.ndarray) -> float:  # noqa: N802
-    sum_over_row = cm.sum(axis=0)
-    sum_over_col = cm.sum(axis=1)
+    sum_over_row: int = cm.sum(axis=0)
+    sum_over_col: int = cm.sum(axis=1)
     true_positives = np.diag(cm)
 
     denominator = sum_over_row + sum_over_col - true_positives
 
     iou = true_positives / denominator
 
-    return iou, np.nanmean(iou)
+    return iou.tolist(), np.nanmean(iou)

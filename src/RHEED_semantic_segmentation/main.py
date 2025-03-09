@@ -17,7 +17,7 @@ image_type = "before"
 train_rate = 0.8
 n_classes = 4
 
-epochs = 500
+epochs = 300
 
 save_dir = Path("models") / image_type
 
@@ -43,7 +43,7 @@ val_transform = albu.Compose(
         albu.ToTensorV2(),
     ]
 )
-loader_param = {"batch_size": 4, "num_workers": 4, "pin_memory": True, "shuffle": True}
+loader_param = {"batch_size": 8, "num_workers": 4, "pin_memory": True, "shuffle": True}
 
 train_loader, val_loader = load_data.make_dataloaders(
     "data",
@@ -59,7 +59,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 history = trainer.train_process(train_loader, val_loader, epochs, device, save_dir)
 
 # 学習結果保存
-save_history = Path("history.json")
+save_history = save_dir / "history.json"
 with save_history.open(mode="w", encoding="utf-8") as f:
     json.dump(history, f, ensure_ascii=False, indent=4)
 
