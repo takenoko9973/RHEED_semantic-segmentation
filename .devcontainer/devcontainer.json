@@ -23,9 +23,7 @@
                     }
                 },
                 "jupyter.notebookFileRoot": "${workspaceFolder}",
-                "ruff.lint.args": [
-                    "--config=pyproject.toml"
-                ]
+                "ruff.configuration": "pyproject.toml"
             },
             "extensions": [
                 "ms-python.python",

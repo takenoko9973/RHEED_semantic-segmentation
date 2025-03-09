@@ -1,7 +1,7 @@
 # Data
 data/*
-download/*
-!download/.gitkeep
+downloads/*
+!downloads/.gitkeep
 
 # Caches
 **/__pycache__/*
