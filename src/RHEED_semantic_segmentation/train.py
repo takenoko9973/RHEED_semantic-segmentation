@@ -9,6 +9,8 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from RHEED_semantic_segmentation import utils
+
 
 class SegmentationTrainer:
     def __init__(
@@ -40,31 +42,38 @@ class SegmentationTrainer:
         self.model.to(device)
 
         history = []
-        best_iou = 0.0
+        best_f1 = 0.0
         with tqdm(range(epochs)) as pbar_epoch:
             for epoch in pbar_epoch:
                 pbar_epoch.set_description(f"[Epoch {epoch + 1}]")
 
                 train_loss = self.train_epoch(train_loader, device)
-                val_loss, class_iou, mean_iou = self.validate_epoch(val_loader, device)
+                val_loss, val_cm = self.validate_epoch(val_loader, device)
+
+                _, macro_f1 = utils.compute_f1_from_confusion_matrix(val_cm)
 
                 epoch_info = {
                     "epoch": epoch + 1,
                     "train_loss": train_loss,
                     "validate_loss": val_loss,
-                    "mean_iou": mean_iou,
+                    "macro_f1": macro_f1,
                 }
                 pbar_epoch.set_postfix(epoch_info)
 
-                epoch_info["class_iou"] = class_iou
-                history.append(epoch_info)
+                history_info = {
+                    "epoch": epoch + 1,
+                    "train_loss": train_loss,
+                    "validate_loss": val_loss,
+                    "confusion_matrix": val_cm.tolist(),
+                }
+                history.append(history_info)
 
                 if save_model_dir:
                     if (epoch + 1) % 20 == 0:
                         self.save_model(save_model_dir / f"epoch_{epoch + 1}.pth")
 
-                    if mean_iou > best_iou:
-                        best_iou = mean_iou
+                    if macro_f1 > best_f1:
+                        best_f1 = macro_f1
                         self.save_model(save_model_dir / "best.pth")
 
                 if self.scheduler is not None:
@@ -96,7 +105,9 @@ class SegmentationTrainer:
 
         return epoch_loss / len(loader)
 
-    def validate_epoch(self, loader: DataLoader, device: DeviceLikeType) -> float:
+    def validate_epoch(
+        self, loader: DataLoader, device: DeviceLikeType
+    ) -> tuple[float, np.ndarray]:
         self.model.eval()
 
         # IoU 評価用
@@ -129,24 +140,10 @@ class SegmentationTrainer:
                 epoch_loss += loss.item()
                 pbar_loss.set_postfix({"loss": loss.item()})
 
-        class_iou, mean_iou = calc_IoU(cm)
-
-        return epoch_loss / len(loader), class_iou, mean_iou
+        return epoch_loss / len(loader), cm
 
     def save_model(self, model_file_path: str | Path) -> None:
         model_file_path = Path(model_file_path)
 
         model_file_path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(self.model.state_dict(), model_file_path)
-
-
-def calc_IoU(cm: np.ndarray) -> float:  # noqa: N802
-    sum_over_row: int = cm.sum(axis=0)
-    sum_over_col: int = cm.sum(axis=1)
-    true_positives = np.diag(cm)
-
-    denominator = sum_over_row + sum_over_col - true_positives
-
-    iou = true_positives / denominator
-
-    return iou.tolist(), np.nanmean(iou)
