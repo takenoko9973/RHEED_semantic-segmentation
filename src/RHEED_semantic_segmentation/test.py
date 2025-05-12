@@ -1,17 +1,13 @@
-import json
 from pathlib import Path
 
 import albumentations as albu
 import numpy as np
 import torch
-from matplotlib import pyplot as plt
 from PIL import Image
-from torch import nn, optim
 
-from RHEED_semantic_segmentation import utils
-from RHEED_semantic_segmentation.dataframe import load_data
 from RHEED_semantic_segmentation.model import UNet
-from RHEED_semantic_segmentation.train import SegmentationTrainer
+from RHEED_semantic_segmentation.utils import image as utils_image
+from RHEED_semantic_segmentation.utils import label as utils_label
 
 
 def segmentation2mask(mask: np.ndarray, color_palette: list) -> np.ndarray:
@@ -28,11 +24,12 @@ def segmentation2mask(mask: np.ndarray, color_palette: list) -> np.ndarray:
     return np.asarray(img)
 
 
-image_type = "after"
-deg = "45"
+image_type = "raw"
+root_dir = Path("downloads/SC-STO-250422/expo50_gain60")
+model_id = "250512"
 
 n_classes = 4
-use_data_path = Path("models", image_type, "best.pth")
+use_data_path = Path("models", image_type, model_id, "best.pth")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -40,6 +37,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model = UNet(n_channels=1, n_classes=n_classes).to(device)
 model_state = torch.load(use_data_path, weights_only=False)
 model.load_state_dict(model_state)
+model.eval()
 
 # 画像読み込み
 test_transform = albu.Compose(
@@ -49,29 +47,21 @@ test_transform = albu.Compose(
     ]
 )
 
-image_path = Path("data", image_type, deg, "0.0.tiff")
-mask_path = Path("data", "masks", deg, "0.0.png")
-test_image = Image.open(image_path)
-test_mask = Image.open(mask_path)
-color_palette = np.array(test_mask.getpalette()).reshape(-1, 3)
+for image_path in root_dir.glob("**/*.tiff"):
+    test_image = Image.open(image_path)
+    test_image = utils_image.auto_scale(test_image)
+    test_image = test_transform(image=test_image)["image"].to(device)
 
-IMAGE_SIZE = 256
+    outputs = model(test_image.unsqueeze(0))
+    probs = torch.softmax(outputs, dim=1)
+    preds = torch.argmax(probs, dim=1)
 
+    pred_array = preds[0].cpu().detach().numpy()
+    pred_image = utils_label.convert_color_lbl(pred_array)
 
-test_image = utils.auto_scale(test_image)
-test_image = test_transform(image=test_image)["image"].to(device)
+    parts = list(image_path.parts)
+    parts[0] = "preds"
+    save_path = Path(*parts).with_suffix(".png")
 
-# 予測
-model.eval()
-
-outputs = model(test_image.unsqueeze(0))
-probs = torch.softmax(outputs, dim=1)
-preds = torch.argmax(probs, dim=1)
-
-pred_array = preds[0].cpu().detach().numpy()
-pred_array = segmentation2mask(pred_array, color_palette).astype(np.uint8)
-pred_image = Image.fromarray(pred_array)
-
-save_path = Path("data", "preds", image_type, deg + ".png")
-save_path.parent.mkdir(exist_ok=True, parents=True)
-pred_image.save(Path("data", "preds", image_type, deg + ".png"))
+    save_path.parent.mkdir(exist_ok=True, parents=True)
+    pred_image.save(save_path)

@@ -36,7 +36,8 @@
                 "ms-toolsai.datawrangler",
                 "analytic-signal.preview-tiff",
                 "mhutchie.git-graph",
-                "tamasfe.even-better-toml"
+                "tamasfe.even-better-toml",
+                "formulahendry.code-runner"
             ]
         }
     },

@@ -2,6 +2,9 @@
 data/*
 downloads/*
 !downloads/.gitkeep
+preds/*
+models/*
+!models/.gitkeep
 
 # Caches
 **/__pycache__/*

@@ -9,7 +9,7 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from RHEED_semantic_segmentation import utils
+from RHEED_semantic_segmentation.utils import other as utils_other
 
 
 class SegmentationTrainer:
@@ -50,7 +50,7 @@ class SegmentationTrainer:
                 train_loss = self.train_epoch(train_loader, device)
                 val_loss, val_cm = self.validate_epoch(val_loader, device)
 
-                _, macro_f1 = utils.compute_f1_from_confusion_matrix(val_cm)
+                _, macro_f1 = utils_other.compute_f1_from_confusion_matrix(val_cm)
 
                 epoch_info = {
                     "epoch": epoch + 1,

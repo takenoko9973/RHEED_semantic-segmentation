@@ -1,13 +1,12 @@
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 from albumentations.core.transforms_interface import BasicTransform
-from PIL import Image
 from torch.utils.data import ConcatDataset, DataLoader, Dataset
 
-from RHEED_semantic_segmentation import utils
 from RHEED_semantic_segmentation.dataframe.rheed_data import RHEEDData
+from RHEED_semantic_segmentation.utils import dataset as utils_dataset
+from RHEED_semantic_segmentation.utils import image as utils_image
 
 
 class SegmentationDataset(Dataset):
@@ -52,7 +51,7 @@ class SegmentationDataset(Dataset):
     def __getitem__(self, index: int) -> tuple[Any, Any]:
         image, mask = self.data_list[index].obtain_images()
 
-        image = utils.auto_scale(image)
+        image = utils_image.auto_scale(image)
 
         if self.transform:
             transformed = self.transform(image=image, mask=mask)
@@ -101,7 +100,7 @@ def make_dataloaders(
 ) -> tuple[DataLoader, DataLoader]:
     dataset = make_dataset(root_dirs, image_type)
 
-    train_dataset, val_dataset = utils.split_dataset(
+    train_dataset, val_dataset = utils_dataset.split_dataset(
         dataset, train_rate, train_transform, val_transform
     )
     train_loader = DataLoader(train_dataset, drop_last=True, **loader_params)

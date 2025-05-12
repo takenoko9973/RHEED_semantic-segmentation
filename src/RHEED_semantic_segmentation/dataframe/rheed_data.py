@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from RHEED_semantic_segmentation import utils
+from RHEED_semantic_segmentation.utils import label as utils_label
 
 
 class RHEEDData:
@@ -59,7 +59,7 @@ class RHEEDDataLabel:
 
     def open_image(self) -> np.ndarray:
         img_shape = self.data["imageHeight"], self.data["imageWidth"]
-        lbl, _ = utils.shapes_to_label(
+        lbl, _ = utils_label.shapes_to_label(
             img_shape, reversed(self.data["shapes"]), self.label_name_to_value
         )
 

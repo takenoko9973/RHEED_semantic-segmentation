@@ -5,16 +5,16 @@ import albumentations as albu
 import torch
 from torch import nn, optim
 
-from RHEED_semantic_segmentation import utils
+import RHEED_semantic_segmentation.utils.other as utils_other
 from RHEED_semantic_segmentation.dataframe import load_data
 from RHEED_semantic_segmentation.model import UNet
 from RHEED_semantic_segmentation.train import SegmentationTrainer
 
 # 再現性のため、シード値固定
-utils.init_random_seed(0)
+utils_other.init_random_seed(0)
 
 # 条件定義
-image_type = "CLAHE"
+image_type = "raw"
 train_rate = 0.8
 n_classes = 4
 
@@ -44,7 +44,7 @@ val_transform = albu.Compose(
         albu.ToTensorV2(),
     ]
 )
-loader_param = {"batch_size": 8, "num_workers": 4, "pin_memory": True, "shuffle": True}
+loader_param = {"batch_size": 4, "num_workers": 4, "pin_memory": True, "shuffle": True}
 
 train_loader, val_loader = load_data.make_dataloaders(
     ["downloads/SC-STO-250422/expo50_gain60"],
