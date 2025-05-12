@@ -5,7 +5,8 @@ import albumentations as albu
 import torch
 from torch import nn, optim
 
-from RHEED_semantic_segmentation import load_data, utils
+from RHEED_semantic_segmentation import utils
+from RHEED_semantic_segmentation.dataframe import load_data
 from RHEED_semantic_segmentation.model import UNet
 from RHEED_semantic_segmentation.train import SegmentationTrainer
 
@@ -13,7 +14,7 @@ from RHEED_semantic_segmentation.train import SegmentationTrainer
 utils.init_random_seed(0)
 
 # 条件定義
-image_type = "before"
+image_type = "CLAHE"
 train_rate = 0.8
 n_classes = 4
 
@@ -46,7 +47,7 @@ val_transform = albu.Compose(
 loader_param = {"batch_size": 8, "num_workers": 4, "pin_memory": True, "shuffle": True}
 
 train_loader, val_loader = load_data.make_dataloaders(
-    "data",
+    ["downloads/SC-STO-250422/expo50_gain60"],
     image_type,
     train_rate,
     train_transform,

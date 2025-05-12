@@ -8,7 +8,8 @@ from matplotlib import pyplot as plt
 from PIL import Image
 from torch import nn, optim
 
-from RHEED_semantic_segmentation import load_data, utils
+from RHEED_semantic_segmentation import utils
+from RHEED_semantic_segmentation.dataframe import load_data
 from RHEED_semantic_segmentation.model import UNet
 from RHEED_semantic_segmentation.train import SegmentationTrainer
 
