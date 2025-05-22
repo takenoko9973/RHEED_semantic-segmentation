@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import numpy as np
@@ -28,6 +29,17 @@ class SegmentationTrainer:
         self.optimizer = optimizer
         self.scheduler = scheduler
 
+    def __str__(self):
+        return ",\n".join(
+            [
+                f"model: {self.model}",
+                f"n_classes: {self.n_classes}",
+                f"criterion: {self.criterion}",
+                f"optimizer: {self.optimizer}",
+                f"scheduler: {self.scheduler}",
+            ]
+        )
+
     def train_process(
         self,
         train_loader: DataLoader,
@@ -35,9 +47,11 @@ class SegmentationTrainer:
         epochs: int,
         device: DeviceLikeType = "CPU",
         save_model_dir: str | Path | None = None,
-    ) -> list[dict]:
+    ) -> None:
         if save_model_dir:
             save_model_dir = Path(save_model_dir)
+
+        history_path = save_model_dir / "history.jsonl"
 
         self.model.to(device)
 
@@ -66,7 +80,9 @@ class SegmentationTrainer:
                     "validate_loss": val_loss,
                     "confusion_matrix": val_cm.tolist(),
                 }
-                history.append(history_info)
+                with history_path.open(mode="a", encoding="utf-8") as f:
+                    json.dump(history_info, f)
+                    f.write("\n")
 
                 if save_model_dir:
                     if (epoch + 1) % 20 == 0:
@@ -78,8 +94,6 @@ class SegmentationTrainer:
 
                 if self.scheduler is not None:
                     self.scheduler.step()
-
-        return history
 
     def train_epoch(self, loader: DataLoader, device: DeviceLikeType) -> float:
         self.model.train()

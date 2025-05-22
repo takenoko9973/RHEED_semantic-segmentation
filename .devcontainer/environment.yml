@@ -16,6 +16,7 @@ dependencies:
     - scipy=1.14
     - pandas=2.2
     - tqdm
+    - toml
 
     - typer
     - loguru
