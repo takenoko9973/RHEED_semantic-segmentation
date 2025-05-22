@@ -22,8 +22,13 @@ class SegmentationDataset(Dataset):
         mask_root_dir = root_dir / "label"
 
         label_paths = sorted(mask_root_dir.glob("**/*.json"))
-        image_paths = []
+        data_paths = []
         for label_path in label_paths:
+            # テストのため、正面データ除外
+            if label_path.stem == "0.0":
+                label_paths.remove(label_path)
+                continue
+
             relative = label_path.relative_to(root_dir)
             parts = list(relative.parts)
             parts[0] = image_type
@@ -33,15 +38,11 @@ class SegmentationDataset(Dataset):
                 msg = f"Image not found: {image_path}"
                 raise FileNotFoundError(msg)
 
-            image_paths.append(image_path)
-
-        if len(image_paths) != len(label_paths):
-            msg = "The number of images and masks must be the same."
-            raise ValueError(msg)
+            data_paths.append({"image": image_path, "label": label_path})
 
         self.data_list: list[RHEEDData] = []
-        for image_path, label_path in zip(image_paths, label_paths, strict=False):
-            self.data_list.append(RHEEDData(image_path, label_path))
+        for data_path in data_paths:
+            self.data_list.append(RHEEDData(data_path["image"], data_path["label"]))
 
         self.transform = transform
 
