@@ -57,10 +57,19 @@ class RHEEDDataLabel:
     def __repr__(self) -> str:
         return f"RHEEDDataLabel(label_path={self.label_path})"
 
+    def get_label_id(self, label_name: str) -> int:
+        return self.label_name_to_value[label_name]
+
     def open_image(self) -> np.ndarray:
         img_shape = self.data["imageHeight"], self.data["imageWidth"]
         lbl, _ = utils_label.shapes_to_label(
-            img_shape, reversed(self.data["shapes"]), self.label_name_to_value
+            img_shape,
+            sorted(
+                self.data["shapes"],
+                key=lambda shape: self.get_label_id(shape["label"]),
+                reverse=True,
+            ),
+            self.label_name_to_value,
         )
 
         return lbl.astype(np.long)
