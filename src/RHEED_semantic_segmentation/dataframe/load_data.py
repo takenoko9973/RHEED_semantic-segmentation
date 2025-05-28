@@ -49,16 +49,21 @@ class SegmentationDataset(Dataset):
     def __len__(self) -> int:
         return len(self.data_list)
 
-    def __getitem__(self, index: int) -> tuple[Any, Any]:
-        image, mask = self.data_list[index].obtain_images()
+    def __getitem__(self, index: int) -> tuple[Any, Any, dict]:
+        image, full_mask, label_masks = self.data_list[index].obtain_images()
 
         image = utils_image.auto_scale(image)
-
         if self.transform:
-            transformed = self.transform(image=image, mask=mask)
-            image, mask = transformed["image"], transformed["mask"]
+            self.transform.add_targets(dict.fromkeys(label_masks, "mask"))
 
-        return image, mask
+            transformed = self.transform(image=image, mask=full_mask, **label_masks)
+            image, full_mask, label_masks = (
+                transformed["image"],
+                transformed["mask"],
+                {k: transformed[k] for k in label_masks},
+            )
+
+        return image, full_mask, label_masks
 
     def get_data_paths(self, index: int) -> tuple[Path, Path]:
         image_path, mask_path = self.data_list[index].get_paths()

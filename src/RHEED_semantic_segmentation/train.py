@@ -21,6 +21,7 @@ class SegmentationTrainer:
         criterion: _Loss,
         optimizer: optim.Optimizer,
         scheduler: optim.lr_scheduler.LRScheduler | None = None,
+        par_label: bool = False,
     ) -> None:
         self.model = model
         self.n_classes = n_classes
@@ -28,8 +29,9 @@ class SegmentationTrainer:
         self.criterion = criterion
         self.optimizer = optimizer
         self.scheduler = scheduler
+        self.par_label = par_label
 
-    def __str__(self):
+    def __str__(self) -> str:
         return ",\n".join(
             [
                 f"model: {self.model}",
@@ -37,6 +39,7 @@ class SegmentationTrainer:
                 f"criterion: {self.criterion}",
                 f"optimizer: {self.optimizer}",
                 f"scheduler: {self.scheduler}",
+                f"par_label: {self.par_label}",
             ]
         )
 
@@ -55,7 +58,6 @@ class SegmentationTrainer:
 
         self.model.to(device)
 
-        history = []
         best_f1 = 0.0
         with tqdm(range(epochs)) as pbar_epoch:
             for epoch in pbar_epoch:
@@ -104,12 +106,18 @@ class SegmentationTrainer:
 
             for _, data in pbar_loss:
                 images: Tensor = data[0].to(device)
-                true_masks: Tensor = data[1].to(device)
+                targets: Tensor = data[1].to(device)
+                label_targets: dict[str, Tensor] = {
+                    label: mask.to(device) for label, mask in data[2].items()
+                }
 
                 self.optimizer.zero_grad()
 
                 outputs = self.model(images)
-                loss: Tensor = self.criterion(outputs, true_masks.long())
+                if self.par_label:
+                    loss, par_label_losses = self.calc_loss_par_label(outputs, label_targets)
+                else:
+                    loss: Tensor = self.criterion(outputs, targets.long())
 
                 loss.backward()
                 self.optimizer.step()
@@ -137,27 +145,82 @@ class SegmentationTrainer:
 
             for _, data in pbar_loss:
                 images: Tensor = data[0].to(device)
-                true_masks: Tensor = data[1].to(device)
+                targets: Tensor = data[1].to(device)
+                label_targets: dict[str, Tensor] = {
+                    label: mask.to(device) for label, mask in data[2].items()
+                }
 
                 outputs = self.model(images)
                 probs = torch.softmax(outputs, dim=1)
-                preds = torch.argmax(probs, dim=1)
+                if self.par_label:
+                    preds = merge_predictions_by_priority(probs)
+                else:
+                    preds = torch.argmax(probs, dim=1)
 
                 # ピクセルごとの混合行列を計算
-                for j in range(len(true_masks)):
-                    true_mask = true_masks[j].cpu().detach().numpy().flatten()
+                for j in range(len(targets)):
+                    true_mask = targets[j].cpu().detach().numpy().flatten()
                     pred_mask = preds[j].cpu().detach().numpy().flatten()
                     cm += confusion_matrix(true_mask, pred_mask, labels=labels)
 
-                loss: Tensor = self.criterion(outputs, true_masks.long())
+                if self.par_label:
+                    loss, par_label_losses = self.calc_loss_par_label(outputs, label_targets)
+                else:
+                    loss: Tensor = self.criterion(outputs, targets.long())
 
                 epoch_loss += loss.item()
                 pbar_loss.set_postfix({"loss": loss.item()})
 
         return epoch_loss / len(loader), cm
 
+    def calc_loss_par_label(
+        self, outputs: Tensor, label_targets: dict[str, Tensor]
+    ) -> tuple[Tensor, dict[str, Tensor]]:
+        B, _, H, W = outputs.shape  # noqa: N806
+
+        sum_loss = torch.zeros(1, device=outputs.device)
+        par_label_loss = {}
+        for i, (label, targets) in enumerate(label_targets.items()):
+            label_outputs = torch.zeros((B, 2, H, W), dtype=outputs.dtype, device=outputs.device)
+            label_outputs[:, 0, :, :] = outputs[:, 0, :, :]
+            label_outputs[:, 1, :, :] = outputs[:, i + 1, :, :]
+
+            par_label_loss[label] = self.criterion(label_outputs, targets.long())
+            sum_loss += par_label_loss[label]
+
+        return sum_loss, par_label_loss
+
     def save_model(self, model_file_path: str | Path) -> None:
         model_file_path = Path(model_file_path)
 
         model_file_path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(self.model.state_dict(), model_file_path)
+
+
+def merge_predictions_by_priority(logits: torch.Tensor) -> torch.Tensor:
+    B, C, H, W = logits.shape
+    assert C != 3, "Expected 4-class logits (background + 3 labels)"
+
+    # 各ラベルの "背景 vs ラベル" のスコア差分を計算
+    bg = logits[:, 0, :, :]  # (B, H, W)
+    l1_score = logits[:, 1, :, :] - bg
+    l2_score = logits[:, 2, :, :] - bg
+    l3_score = logits[:, 3, :, :] - bg
+
+    # 最初は全て background (label=0)
+    merged_pred = torch.zeros((B, H, W), dtype=torch.long, device=logits.device)
+
+    # l1 が背景より強ければ 1 を割り当てる
+    mask1 = l1_score > 0
+    merged_pred[mask1] = 1
+
+    # l2: まだ 0 のところだけ、かつ l2_score > 0
+    mask2 = (merged_pred == 0) & (l2_score > 0)
+    merged_pred[mask2] = 2
+
+    # l3: まだ 0 のところだけ、かつ l3_score > 0
+    mask3 = (merged_pred == 0) & (l3_score > 0)
+    merged_pred[mask3] = 3
+
+    # 残りは背景（label = 0）のまま
+    return merged_pred  # (B, H, W)

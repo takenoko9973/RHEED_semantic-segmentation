@@ -24,44 +24,47 @@ def segmentation2mask(mask: np.ndarray, color_palette: list) -> np.ndarray:
     return np.asarray(img)
 
 
-image_type = "raw"
+image_types = ["raw", "CLAHE"]
 root_dir = Path("downloads/SC-STO-250422/expo50_gain60")
-model_id = "250512"
+model_id = "250528"
 
 n_classes = 4
-use_data_path = Path("models", image_type, model_id, "best.pth")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# モデル類
-model = UNet(n_channels=1, n_classes=n_classes).to(device)
-model_state = torch.load(use_data_path, weights_only=False)
-model.load_state_dict(model_state)
-model.eval()
+for image_type in image_types:
+    print(f"id: {model_id}, type: {image_type}")
+    use_data_path = Path("models", image_type, model_id, "best.pth")
 
-# 画像読み込み
-test_transform = albu.Compose(
-    [
-        albu.Resize(135, 180),  # (540, 720) -> (135, 180)
-        albu.ToTensorV2(),
-    ]
-)
+    # モデル類
+    model = UNet(n_channels=1, n_classes=n_classes).to(device)
+    model_state = torch.load(use_data_path, weights_only=False)
+    model.load_state_dict(model_state)
+    model.eval()
 
-for image_path in root_dir.glob("**/*.tiff"):
-    test_image = Image.open(image_path)
-    test_image = utils_image.auto_scale(test_image)
-    test_image = test_transform(image=test_image)["image"].to(device)
+    # 画像読み込み
+    test_transform = albu.Compose(
+        [
+            albu.Resize(135, 180),  # (540, 720) -> (135, 180)
+            albu.ToTensorV2(),
+        ]
+    )
 
-    outputs = model(test_image.unsqueeze(0))
-    probs = torch.softmax(outputs, dim=1)
-    preds = torch.argmax(probs, dim=1)
+    for image_path in (root_dir / image_type).glob("**/*.tiff"):
+        test_image = Image.open(image_path)
+        test_image = utils_image.auto_scale(test_image)
+        test_image = test_transform(image=test_image)["image"].to(device)
 
-    pred_array = preds[0].cpu().detach().numpy()
-    pred_image = utils_label.convert_color_lbl(pred_array)
+        outputs = model(test_image.unsqueeze(0))
+        probs = torch.softmax(outputs, dim=1)
+        preds = torch.argmax(probs, dim=1)
 
-    parts = list(image_path.parts)
-    parts[0] = "preds"
-    save_path = Path(*parts).with_suffix(".png")
+        pred_array = preds[0].cpu().detach().numpy()
+        pred_image = utils_label.convert_color_lbl(pred_array)
 
-    save_path.parent.mkdir(exist_ok=True, parents=True)
-    pred_image.save(save_path)
+        parts = list(image_path.parts)
+        parts[0] = f"preds/{model_id}"
+        save_path = Path(*parts).with_suffix(".png")
+
+        save_path.parent.mkdir(exist_ok=True, parents=True)
+        pred_image.save(save_path)

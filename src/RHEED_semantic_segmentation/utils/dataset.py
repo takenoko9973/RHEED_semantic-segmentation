@@ -16,14 +16,20 @@ class SegmentationSubset(Dataset):
         self.indices = indices
         self.transform = transform
 
-    def __getitem__(self, index: int) -> tuple[Any, Any]:
-        image, mask = self.dataset[self.indices[index]]
+    def __getitem__(self, index: int) -> tuple[Any, Any, dict]:
+        image, full_mask, label_masks = self.dataset[self.indices[index]]
 
         if self.transform:
-            transformed = self.transform(image=image, mask=mask)
-            image, mask = transformed["image"], transformed["mask"]
+            self.transform.add_targets(dict.fromkeys(label_masks, "mask"))
 
-        return image, mask
+            transformed = self.transform(image=image, mask=full_mask, **label_masks)
+            image, full_mask, label_masks = (
+                transformed["image"],
+                transformed["mask"],
+                {k: transformed[k] for k in label_masks},
+            )
+
+        return image, full_mask, label_masks
 
     def __len__(self) -> int:
         return len(self.indices)

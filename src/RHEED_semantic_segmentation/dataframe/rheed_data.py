@@ -22,11 +22,11 @@ class RHEEDData:
     def get_paths(self) -> tuple[Path, Path]:
         return self.data_image.image_path, self.data_label.label_path
 
-    def obtain_images(self) -> tuple[Image.Image, np.ndarray]:
+    def obtain_images(self) -> tuple[Image.Image, np.ndarray, dict[np.ndarray]]:
         image = self.data_image.open_image()
-        label = self.data_label.open_image()
+        full_mask, masks = self.data_label.create_masks()
 
-        return image, label
+        return image, full_mask, masks
 
 
 class RHEEDDataImage:
@@ -60,16 +60,26 @@ class RHEEDDataLabel:
     def get_label_id(self, label_name: str) -> int:
         return self.label_name_to_value[label_name]
 
-    def open_image(self) -> np.ndarray:
+    def create_masks(self) -> dict[str, np.ndarray]:
         img_shape = self.data["imageHeight"], self.data["imageWidth"]
-        lbl, _ = utils_label.shapes_to_label(
+
+        full_mask, _ = utils_label.shapes_to_label(
             img_shape,
-            sorted(
-                self.data["shapes"],
-                key=lambda shape: self.get_label_id(shape["label"]),
-                reverse=True,
-            ),
+            sorted(self.data["shapes"], key=lambda shape: self.get_label_id(shape["label"])),
             self.label_name_to_value,
         )
 
-        return lbl.astype(np.long)
+        masks = {}
+        for label in self.label_name_to_value:
+            if self.get_label_id(label) <= 0:
+                continue
+
+            shapes = filter(lambda shape: shape["label"] == label, self.data["shapes"])
+            mask, _ = utils_label.shapes_to_label(
+                img_shape,
+                shapes,
+                {"_background_": 0, label: 1},
+            )
+            masks[label] = mask
+
+        return full_mask, masks
