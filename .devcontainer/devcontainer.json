@@ -44,11 +44,6 @@
     // WSLg設定 : matplotlib表示用
     "mounts": [
         {
-            "source": "RHEED-segmantation-ml_data",
-            "target": "${containerWorkspaceFolder}/data",
-            "type": "volume"
-        },
-        {
             "source": "/run/desktop/mnt/host/wslg/.X11-unix",
             "target": "/tmp/.X11-unix",
             "type": "bind"
