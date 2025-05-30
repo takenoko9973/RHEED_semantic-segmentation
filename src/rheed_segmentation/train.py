@@ -9,8 +9,8 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from src.utils.postprocessing import merge_predictions_by_priority
-from src.utils.result_manager import ResultDir
+from rheed_segmentation.utils.postprocessing import merge_predictions_by_priority
+from rheed_segmentation.utils.result_manager import ResultDir
 
 
 class LossComputer:

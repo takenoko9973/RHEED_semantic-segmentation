@@ -1,8 +1,5 @@
 {
     "python.analysis.extraPaths": [
-        "./source",
-        "./src/*",
-        "./src/RHEED_semantic_segmentation",
-        "./experiments"
+        "./src",
     ],
 }

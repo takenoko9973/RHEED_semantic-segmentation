@@ -1,11 +1,11 @@
 import albumentations as albu
 from torch import nn, optim
 
-from src.data_loader import make_dataloaders
-from src.model.unet import UNet
-from src.train import LossComputer, Trainer
-from src.transforms.auto_scale import AutoScaleTransform
-from src.utils.result_manager import ResultDirManager
+from rheed_segmentation.data_loader import make_dataloaders
+from rheed_segmentation.model.unet import UNet
+from rheed_segmentation.train import LossComputer, Trainer
+from rheed_segmentation.transforms.auto_scale import AutoScaleTransform
+from rheed_segmentation.utils.result_manager import ResultDirManager
 
 
 def main() -> None:
