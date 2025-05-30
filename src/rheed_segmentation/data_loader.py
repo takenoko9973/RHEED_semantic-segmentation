@@ -8,7 +8,7 @@ from albumentations.core.transforms_interface import BasicTransform
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
-from rheed_segmentation.utils import labelme
+from .utils import labelme
 
 
 @dataclass(frozen=True)
