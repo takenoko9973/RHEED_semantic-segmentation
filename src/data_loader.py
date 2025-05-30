@@ -1,5 +1,6 @@
-import json as JSON  # noqa: N812
+import json
 import random
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -7,9 +8,18 @@ from albumentations.core.transforms_interface import BasicTransform
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
-from src.preprocess import LabelPairPath
 from src.utils import labelme
-from src.utils.image import auto_scale
+
+
+@dataclass(frozen=True)
+class LabelPairPath:
+    image_path: Path
+    json_path: Path
+    filename: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.filename is None:
+            object.__setattr__(self, "filename", self.image_path.name)
 
 
 class ImageLabelLoader:
@@ -17,12 +27,12 @@ class ImageLabelLoader:
         self.label_map = label_map
         self.generate_per_labels = generate_per_labels
 
-    def load(self, lp: LabelPairPath) -> tuple[Image.Image, np.ndarray | dict[str, np.ndarray]]:
+    def load(self, lp: LabelPairPath) -> tuple[np.ndarray, np.ndarray | dict[str, np.ndarray]]:
         image = Image.open(lp.image_path)
-        image = auto_scale(image)
+        image = np.array(image)
 
         with lp.json_path.open() as f:
-            json_data = JSON.load(f)
+            json_data = json.load(f)
 
         if self.generate_per_labels:
             mask = labelme.create_masks_per_labels(json_data, self.label_map)
@@ -105,6 +115,7 @@ def make_dataloaders(
     mask_dir = data_dir / "label"
     batch_size: int = config.get("batch_size", 8)
     num_workers: int = config.get("num_workers", 2)
+    per_labels: bool = config.get("per_label", False)
 
     # ファイル一覧取得
     label_paths = sorted(mask_dir.glob("**/*.json"))
@@ -114,7 +125,7 @@ def make_dataloaders(
     train_paths, val_paths = split_data(label_pair_paths, val_ratio=0.2)
 
     # Dataset作成
-    imageloader = ImageLabelLoader(config["label_map"], generate_per_labels=True)
+    imageloader = ImageLabelLoader(config["label_map"], generate_per_labels=per_labels)
     train_dataset = SegmentationDataset(train_paths, imageloader, transform=train_transform)
     val_dataset = SegmentationDataset(val_paths, imageloader, transform=val_transform)
 

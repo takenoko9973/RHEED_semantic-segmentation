@@ -1,14 +1,11 @@
-import random
-from pathlib import Path
-
 import albumentations as albu
-from torch import Tensor, nn, optim
-from torch.utils.data import DataLoader
+from torch import nn, optim
 
 from src.data_loader import make_dataloaders
 from src.model.unet import UNet
-from src.preprocess import LabelPairPath
 from src.train import LossComputer, Trainer
+from src.transforms.auto_scale import AutoScaleTransform
+from src.utils.result_manager import ResultDirManager
 
 
 def main() -> None:
@@ -18,10 +15,16 @@ def main() -> None:
         "streak": 2,
         "kikuchi": 3,
     }
-    config = {"data_dir": "downloads/SC-STO-250422/expo50_gain60", "label_map": labels}
+
+    config = {
+        "data_dir": "data/SC-STO-250422/expo50_gain60",
+        "label_map": labels,
+        "per_label": True,
+    }
 
     train_transform = albu.Compose(
         [
+            AutoScaleTransform(),
             albu.Resize(135, 180),  # (540, 720) -> (135, 180)
             albu.HorizontalFlip(p=0.5),
             albu.ToTensorV2(),
@@ -29,10 +32,12 @@ def main() -> None:
     )
     val_transform = albu.Compose(
         [
+            AutoScaleTransform(),
             albu.Resize(135, 180),  # (540, 720) -> (135, 180)
             albu.ToTensorV2(),
         ]
     )
+    result_manager = ResultDirManager()
 
     train_loader, val_loader = make_dataloaders(config, train_transform, val_transform)
     model = UNet(n_channels=1, n_classes=len(labels))
@@ -47,7 +52,7 @@ def main() -> None:
         val_loader=val_loader,
         loss_computer=loss_computer,
         optimizer=optimizer,
-        save_dir="hoge",
+        save_dir=result_manager.create_log_file("raw"),
         device="cuda",
         scheduler=scheduler,
     )
