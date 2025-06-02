@@ -3,7 +3,11 @@ from pathlib import Path
 from rheed_segmentation.config.experiment_config import load_config
 from rheed_segmentation.experiment import experiments
 
-config_file = Path("config.yaml")
+config_files = [
+    Path("configs", "raw.yaml"),
+    Path("configs", "CLAHE.yaml"),
+    Path("configs", "CLAHE_Gaussian.yaml"),
+]
 
 
 def main(config_file: Path) -> None:
@@ -12,4 +16,4 @@ def main(config_file: Path) -> None:
 
 
 if __name__ == "__main__":
-    main(config_file)
+    main(config_files)

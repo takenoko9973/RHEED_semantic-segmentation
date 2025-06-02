@@ -1,4 +1,4 @@
-from rheed_segmentation.config import Config, ExperimentConfig
+from rheed_segmentation.config import Configs, ExperimentConfig
 from rheed_segmentation.config.transform_config import TargetMode
 from rheed_segmentation.data_loader import make_dataloaders
 from rheed_segmentation.train import Trainer
@@ -25,6 +25,6 @@ def training_experiment(experiment_config: ExperimentConfig) -> None:
     trainer.train(experiment_config.training.epoch)
 
 
-def experiments(config: Config) -> None:
+def experiments(config: Configs) -> None:
     for experiment in config.experiments:
         training_experiment(experiment)

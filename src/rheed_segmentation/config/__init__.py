@@ -1,1 +1,1 @@
-from .experiment_config import Config, ExperimentConfig, load_config
+from .experiment_config import Configs, ExperimentConfig, load_config

@@ -34,14 +34,14 @@ class ExperimentConfig:
 
     def save_config(self, path: Path) -> None:
         with path.open(mode="w", encoding="utf-8") as f:
-            yaml.safe_dump(self.experiment_config, f)
+            yaml.safe_dump(self.experiment_config, f, allow_unicode=True, sort_keys=False)
 
     def build_transform_compose(self, target: TargetMode | str) -> albu.Compose:
         return self.transforms.to_transform_compose(target)
 
 
 @dataclass
-class Config:
+class Configs:
     experiments: list[ExperimentConfig]
 
     def __init__(self, experiments: list[dict]) -> None:
@@ -51,8 +51,11 @@ class Config:
         ]
 
 
-def load_config(config_path: str | Path) -> Config:
-    with Path(config_path).open(mode="r", encoding="utf-8") as f:
-        raw: dict[str, list[dict[str, Any]]] = yaml.safe_load(f)
+def load_config(config_paths: list[str | Path]) -> Configs:
+    raw: dict[str, list[dict[str, Any]]] = {"experiments": []}
 
-    return Config(**raw)
+    for config_path in config_paths:
+        with Path(config_path).open(mode="r", encoding="utf-8") as f:
+            raw["experiments"].append(yaml.safe_load(f))
+
+    return Configs(**raw)
