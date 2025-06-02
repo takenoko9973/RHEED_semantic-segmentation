@@ -1,12 +1,17 @@
 import datetime
 import json
 import re as regex
+from dataclasses import dataclass
 from pathlib import Path
 
 RESULTS_ROOT_DIR = "results"
 
 
+@dataclass
 class ResultDir:
+    name: str
+    path: Path
+
     def __init__(
         self,
         protocol: str,
@@ -17,6 +22,8 @@ class ResultDir:
         self.date = date
         self.root_dir = Path(root_dir)
 
+        self.name = f"{self.protocol}-{self.date}"
+        self.path = self.root_dir / self.name
         self.path.mkdir(parents=True, exist_ok=True)
 
     @classmethod
@@ -40,17 +47,6 @@ class ResultDir:
 
         return cls.from_file_name(file_name, log_dir)
 
-    def __str__(self) -> str:
-        return f"ResultDir(path={self.path})"
-
-    @property
-    def name(self) -> str:
-        return f"{self.protocol}-{self.date}"
-
-    @property
-    def path(self) -> Path:
-        return self.root_dir / self.name
-
     def write_history_file(self, history_data: dict) -> None:
         file_path = self.path / "history.jsonl"
 
@@ -63,23 +59,23 @@ class ResultDirManager:
     def __init__(self, root_dir: str | Path = RESULTS_ROOT_DIR) -> None:
         self.root_dir = Path(root_dir)
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}[root_dir={self.root_dir}]"
 
-    def get_log_files(self) -> list[ResultDir]:
+    def get_result_dirs(self) -> list[ResultDir]:
         dirs = self.root_dir.iterdir()
         dirs = [ResultDir.from_file_path(result_dir) for result_dir in dirs]
         return sorted(dirs, key=lambda x: x.date)
 
-    def get_latest_log_file(self) -> ResultDir | None:
-        log_files = self.get_log_files()
+    def get_latest_result_dir(self) -> ResultDir | None:
+        log_files = self.get_result_dirs()
 
         if len(log_files) == 0:
             return None
 
         return log_files[-1]
 
-    def create_log_file(self, protocol: str) -> ResultDir:
+    def create_result_dir(self, protocol: str) -> ResultDir:
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
         date = now.strftime("%Y%m%d%H%M%S")
 

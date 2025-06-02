@@ -22,6 +22,9 @@
                         "source.organizeImports": "explicit"
                     }
                 },
+                "[yaml]": {
+                    "editor.defaultFormatter": "redhat.vscode-yaml"
+                },
                 "jupyter.notebookFileRoot": "${workspaceFolder}",
                 "ruff.configuration": "pyproject.toml"
             },
@@ -37,7 +40,8 @@
                 "analytic-signal.preview-tiff",
                 "mhutchie.git-graph",
                 "tamasfe.even-better-toml",
-                "formulahendry.code-runner"
+                "formulahendry.code-runner",
+                "redhat.vscode-yaml"
             ]
         }
     },

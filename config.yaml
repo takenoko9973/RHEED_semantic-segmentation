@@ -1,0 +1,139 @@
+experiments:
+  # - protocol: "raw"
+  #   data_dirs: ["data/SC-STO-250422/expo50_gain60"]
+  #   per_label: true
+  #   labels:
+  #     _background_: 0
+  #     spot: 1
+  #     streak: 2
+  #     kikuchi: 3
+
+  #   training:
+  #     epoch: 300
+  #     batch_size: 4
+  #     model:
+  #       name: "rheed_segmentation.model.UNet"
+  #       params:
+  #         n_channels: 1
+  #         n_classes: 4
+  #     criterion:
+  #       name: "CrossEntropyLoss"
+  #     optimizer:
+  #       name: "torch.optim.Adam"
+  #       params:
+  #         lr: 0.001
+  #     scheduler:
+  #       name: "torch.optim.lr_scheduler.StepLR"
+  #       params:
+  #         step_size: 10
+  #         gamma: 0.8
+  #   transforms:
+  #     - name: "rheed_segmentation.transforms.AutoScaleTransform"
+  #     - name: "Resize"
+  #       params:
+  #         height: 135
+  #         width: 180
+  #     - name: "HorizontalFlip"
+  #       target: "train"
+  #       params:
+  #         p: 0.5
+  #     - name: "ToTensorV2"
+
+  # - protocol: "CLAHE"
+  #   data_dirs: ["data/SC-STO-250422/expo50_gain60"]
+  #   per_label: true
+  #   labels:
+  #     _background_: 0
+  #     spot: 1
+  #     streak: 2
+  #     kikuchi: 3
+
+  #   training:
+  #     epoch: 300
+  #     batch_size: 4
+  #     model:
+  #       name: "rheed_segmentation.model.UNet"
+  #       params:
+  #         n_channels: 1
+  #         n_classes: 4
+  #     criterion:
+  #       name: "CrossEntropyLoss"
+  #     optimizer:
+  #       name: "torch.optim.Adam"
+  #       params:
+  #         lr: 0.001
+  #     scheduler:
+  #       name: "torch.optim.lr_scheduler.StepLR"
+  #       params:
+  #         step_size: 10
+  #         gamma: 0.8
+  #   transforms:
+  #     - name: "rheed_segmentation.transforms.CLAHE"
+  #       params:
+  #         tile_grid_size: [8, 8]
+  #     - name: "rheed_segmentation.transforms.CLAHE"
+  #       params:
+  #         tile_grid_size: [4, 4]
+  #     - name: "rheed_segmentation.transforms.AutoScaleTransform"
+  #     - name: "Resize"
+  #       params:
+  #         height: 135
+  #         width: 180
+  #     - name: "HorizontalFlip"
+  #       target: "train"
+  #       params:
+  #         p: 0.5
+  #     - name: "ToTensorV2"
+
+  - protocol: "CLAHE_Gaussian"
+    comment: "CLAHE前後でガウシアンフィルタ"
+    data_dirs: ["data/SC-STO-250422/expo50_gain60"]
+    per_label: true
+    labels:
+      _background_: 0
+      spot: 1
+      streak: 2
+      kikuchi: 3
+
+    training:
+      epoch: 300
+      batch_size: 4
+      model:
+        name: "rheed_segmentation.model.UNet"
+        params:
+          n_channels: 1
+          n_classes: 4
+      criterion:
+        name: "CrossEntropyLoss"
+      optimizer:
+        name: "torch.optim.Adam"
+        params:
+          lr: 0.001
+      scheduler:
+        name: "torch.optim.lr_scheduler.StepLR"
+        params:
+          step_size: 10
+          gamma: 0.8
+    transforms:
+      - name: "rheed_segmentation.transforms.GaussianBlur"
+        params:
+          ksize: [3, 3]
+      - name: "rheed_segmentation.transforms.CLAHE"
+        params:
+          tile_grid_size: [8, 8]
+      - name: "rheed_segmentation.transforms.CLAHE"
+        params:
+          tile_grid_size: [4, 4]
+      - name: "rheed_segmentation.transforms.GaussianBlur"
+        params:
+          ksize: [3, 3]
+      - name: "rheed_segmentation.transforms.AutoScaleTransform"
+      - name: "Resize"
+        params:
+          height: 135
+          width: 180
+      - name: "HorizontalFlip"
+        target: "train"
+        params:
+          p: 0.5
+      - name: "ToTensorV2"

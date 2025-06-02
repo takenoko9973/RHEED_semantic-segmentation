@@ -9,6 +9,9 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from rheed_segmentation import utils
+
+from .config.training_config import TrainingConfig
 from .utils.postprocessing import merge_predictions_by_priority
 from .utils.result_manager import ResultDir
 
@@ -50,51 +53,63 @@ class LossComputer:
 class Trainer:
     def __init__(
         self,
-        model: nn.Module,
+        config: TrainingConfig,
+        num_classes: int,
         train_loader: DataLoader,
         val_loader: DataLoader,
-        loss_computer: LossComputer,
-        optimizer: optim.Optimizer,
-        device: DeviceLikeType,
         save_dir: ResultDir,
-        scheduler: optim.lr_scheduler.LRScheduler | None = None,
     ) -> None:
-        self.model = model.to(device)
+        self.config = config
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.model = self.config.model.to(self.device)
+
+        self.criterion = config.criterion
+        self.optimizer = config.optimizer
+        self.scheduler = config.scheduler
+
         self.train_loader = train_loader
         self.val_loader = val_loader
-        self.optimizer = optimizer
-        self.loss_computer = loss_computer
-        self.scheduler = scheduler
-        self.device = device
+
+        self.loss_computer = LossComputer(self.criterion, num_classes)
+
         self.save_dir = save_dir
 
-        self.best_val_loss = float("inf")
+        self.best_macro_f1 = 0.0
 
     def train(self, num_epochs: int) -> None:
-        epoch_loop = tqdm(range(1, num_epochs + 1))
-        for epoch in epoch_loop:
-            train_loss = self._train_one_epoch(epoch)
-            val_loss, cm = self._validate_one_epoch(epoch)
+        try:
+            epoch_loop = tqdm(range(1, num_epochs + 1))
+            for epoch in epoch_loop:
+                epoch_loop.set_description(f"[Epoch {epoch}, {self.save_dir.protocol}]")
 
-            epoch_info = {
-                "epoch": epoch,
-                "train_loss": train_loss,
-                "validate_loss": val_loss,
-            }
-            epoch_loop.set_postfix(epoch_info)
+                train_loss = self._train_one_epoch(epoch)
+                val_loss, cm = self._validate_one_epoch(epoch)
 
-            self._save_metrics(epoch, train_loss, val_loss, cm.tolist())
+                _, macro_f1 = utils.compute_f1_from_confusion_matrix(cm)
 
-            if epoch % 20 == 0:
-                self._save_checkpoint(self.save_dir.path / f"epoch_{epoch}.pth")
-            if val_loss < self.best_val_loss:
-                self.best_val_loss = val_loss
-                self._save_checkpoint(self.save_dir.path / "best.pth")
+                epoch_info = {
+                    "epoch": epoch,
+                    "train_loss": train_loss,
+                    "validate_loss": val_loss,
+                    "macro_f1": macro_f1,
+                }
+                epoch_loop.set_postfix(epoch_info)
 
-            if self.scheduler:
-                self.scheduler.step()
+                self._save_metrics(epoch, train_loss, val_loss, cm.tolist())
 
-    def _train_one_epoch(self, epoch: int) -> float:
+                if epoch % 20 == 0:
+                    self._save_checkpoint(self.save_dir.path / f"epoch_{epoch}.pth")
+                if macro_f1 > self.best_macro_f1:
+                    self.best_macro_f1 = macro_f1
+                    self._save_checkpoint(self.save_dir.path / "best.pth")
+
+                if self.scheduler:
+                    self.scheduler.step()
+        finally:
+            self._save_checkpoint(self.save_dir.path / "latest.pth")
+
+    def _train_one_epoch(self, epoch: int) -> float:  # noqa: ARG002
         self.model.train()
 
         total_loss = 0.0
@@ -123,7 +138,7 @@ class Trainer:
 
         return total_loss / len(self.train_loader)
 
-    def _validate_one_epoch(self, epoch: int) -> tuple[float, np.ndarray]:
+    def _validate_one_epoch(self, epoch: int) -> tuple[float, np.ndarray]:  # noqa: ARG002
         self.model.eval()
 
         num_classes = self.loss_computer.num_classes

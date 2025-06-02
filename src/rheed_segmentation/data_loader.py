@@ -1,3 +1,4 @@
+import itertools
 import json
 import random
 from dataclasses import dataclass
@@ -8,6 +9,7 @@ from albumentations.core.transforms_interface import BasicTransform
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
+from .config.experiment_config import ExperimentConfig
 from .utils import labelme
 
 
@@ -29,7 +31,7 @@ class ImageLabelLoader:
 
     def load(self, lp: LabelPairPath) -> tuple[np.ndarray, np.ndarray | dict[str, np.ndarray]]:
         image = Image.open(lp.image_path)
-        image = np.array(image)
+        image = np.array(image).astype(np.uint16)
 
         with lp.json_path.open() as f:
             json_data = json.load(f)
@@ -76,18 +78,15 @@ class SegmentationDataset(Dataset):
 def split_data(
     label_path_pair: list[LabelPairPath], val_ratio: float = 0.2
 ) -> tuple[list[LabelPairPath], list[LabelPairPath]]:
-    paths = label_path_pair.copy()
     random.shuffle(label_path_pair)
 
-    val_size = int(len(paths) * val_ratio)
-    val_paths = paths[:val_size]
-    train_paths = paths[val_size:]
+    val_size = int(len(label_path_pair) * val_ratio)
+    val_paths = label_path_pair[:val_size]
+    train_paths = label_path_pair[val_size:]
     return train_paths, val_paths
 
 
-def load_paths(
-    root_dir: Path, mask_paths: list[Path], image_type: str
-) -> tuple[list[Path], list[Path]]:
+def load_paths(root_dir: Path, mask_paths: list[Path], image_type: str) -> list[LabelPairPath]:
     img_paths = []
 
     for mask_path in mask_paths:
@@ -106,26 +105,30 @@ def load_paths(
 
 
 def make_dataloaders(
-    config: dict,
+    config: ExperimentConfig,
     train_transform: BasicTransform | None = None,
     val_transform: BasicTransform | None = None,
 ) -> tuple[DataLoader, DataLoader]:
     # 必要な情報を config から取得
-    data_dir = Path(config["data_dir"])
-    mask_dir = data_dir / "label"
-    batch_size: int = config.get("batch_size", 8)
-    num_workers: int = config.get("num_workers", 2)
-    per_labels: bool = config.get("per_label", False)
+    data_dirs = config.data_dirs
+    batch_size: int = config.training.batch_size
+    num_workers: int = config.training.num_workers
+    per_labels: bool = config.per_label
 
     # ファイル一覧取得
-    label_paths = sorted(mask_dir.glob("**/*.json"))
-    label_pair_paths = load_paths(data_dir, label_paths, "raw")
+    label_pair_paths = []
+    for data_dir in data_dirs:
+        label_dir = data_dir / "label"
+        label_paths = sorted(label_dir.glob("**/*.json"))
+        label_pair_paths.append(load_paths(data_dir, label_paths, "raw"))
+
+    label_pair_paths = list(itertools.chain.from_iterable(label_pair_paths))
 
     # ランダム分割
     train_paths, val_paths = split_data(label_pair_paths, val_ratio=0.2)
 
     # Dataset作成
-    imageloader = ImageLabelLoader(config["label_map"], generate_per_labels=per_labels)
+    imageloader = ImageLabelLoader(config.labels, generate_per_labels=per_labels)
     train_dataset = SegmentationDataset(train_paths, imageloader, transform=train_transform)
     val_dataset = SegmentationDataset(val_paths, imageloader, transform=val_transform)
 
