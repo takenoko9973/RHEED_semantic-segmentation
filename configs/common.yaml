@@ -1,0 +1,18 @@
+comment: "共通テスト"
+
+data_dirs: ["data/SC-STO-250422/expo50_gain60"]
+labels:
+  _background_: 0
+  spot: 1
+  streak: 2
+  kikuchi: 3
+per_label: true
+
+training:
+  epoch: 300
+  batch_size: 4
+  model:
+    name: "rheed_segmentation.model.UNet"
+    params:
+      n_channels: 1
+      n_classes: 4

@@ -1,21 +1,7 @@
 protocol: "CLAHE_Gaussian"
-comment: "CLAHE前後でガウシアンフィルタ"
-data_dirs: ["data/SC-STO-250422/expo50_gain60"]
-per_label: true
-labels:
-  _background_: 0
-  spot: 1
-  streak: 2
-  kikuchi: 3
+comment: "CLAHE(8x8 → 4x4), CLAHE前後でガウシアンフィルタ"
 
 training:
-  epoch: 300
-  batch_size: 4
-  model:
-    name: "rheed_segmentation.model.UNet"
-    params:
-      n_channels: 1
-      n_classes: 4
   criterion:
     name: "CrossEntropyLoss"
   optimizer:
