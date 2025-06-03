@@ -1,4 +1,4 @@
-comment: "共通テスト"
+comment: "U-Net Dropout(TCB5-7)"
 
 data_dirs: ["data/SC-STO-250422/expo50_gain60"]
 labels:
@@ -12,7 +12,7 @@ training:
   epoch: 300
   batch_size: 4
   model:
-    name: "rheed_segmentation.model.UNet"
+    name: "rheed_segmentation.model.UNetDropout"
     params:
       n_channels: 1
       n_classes: 4
