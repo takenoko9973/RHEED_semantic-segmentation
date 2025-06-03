@@ -93,7 +93,7 @@ def create_mask(json_data: dict, labels: dict[str, int]) -> npt.NDArray[np.int32
 
     full_mask, _ = shapes_to_label(
         img_shape,
-        sorted(json_data["shapes"], key=lambda shape: labels[shape["label"]]),
+        sorted(json_data["shapes"], key=lambda shape: labels[shape["label"]], reverse=True),
         labels,
     )
 
