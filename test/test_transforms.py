@@ -19,7 +19,7 @@ def main() -> None:
 
     img = np.array(Image.open(img_path)).astype(np.uint16)
 
-    compose = config.experiments[0].transforms.to_transform_compose(target=TargetMode.TRAIN)
+    compose = config.transforms.to_transform_compose(target=TargetMode.TRAIN)
     img2 = compose(image=img)["image"][0]
 
     plt.imshow(img)

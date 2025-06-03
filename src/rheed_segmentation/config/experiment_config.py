@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import albumentations as albu
 import yaml
@@ -42,10 +41,11 @@ class ExperimentConfig:
 class Configs:
     experiments: list[ExperimentConfig]
 
-    def __init__(self, experiments: list[dict]) -> None:
+    def __post_init__(self) -> None:
         self.experiments = [
             ExperimentConfig(**experiment, experiment_config=experiment)
-            for experiment in experiments
+            for experiment in self.experiments
+            if isinstance(experiment, dict)
         ]
 
 
@@ -71,21 +71,26 @@ def merge_dicts(base: dict, override: dict) -> dict:
 
 
 def load_config(
-    config_paths: list[str | Path], common_config_path: str | Path | None = None
-) -> Configs:
-    config_dict: dict[str, list[dict[str, Any]]] = {"experiments": []}
-
+    config_path: str | Path, common_config_path: str | Path | None = None
+) -> ExperimentConfig:
     if common_config_path is not None:
         with Path(common_config_path).open(mode="r", encoding="utf-8") as f:
             common_dict = yaml.safe_load(f)
 
-    for config_path in config_paths:
-        with Path(config_path).open(mode="r", encoding="utf-8") as f:
-            experiment_dict = yaml.safe_load(f)
+    with Path(config_path).open(mode="r", encoding="utf-8") as f:
+        experiment_dict = yaml.safe_load(f)
 
-        if common_config_path is not None:
-            experiment_dict = merge_dicts(common_dict, experiment_dict)
+    if common_config_path is not None:
+        experiment_dict = merge_dicts(common_dict, experiment_dict)
 
-        config_dict["experiments"].append(experiment_dict)
+    return ExperimentConfig(**experiment_dict)
 
-    return Configs(**config_dict)
+
+def load_configs(
+    config_paths: list[str | Path], common_config_path: str | Path | None = None
+) -> Configs:
+    experiment_configs = [
+        load_config(config_path, common_config_path) for config_path in config_paths
+    ]
+
+    return Configs(experiment_configs)

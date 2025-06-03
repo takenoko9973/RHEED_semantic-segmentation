@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from rheed_segmentation.config.experiment_config import load_config
+from rheed_segmentation.config.experiment_config import load_configs
 from rheed_segmentation.experiment import experiments
 
 common_config_file = Path("configs", "common.yaml")
@@ -13,7 +13,7 @@ config_files = [
 
 
 def main(config_files: list[Path]) -> None:
-    config = load_config(config_files, common_config_file)
+    config = load_configs(config_files, common_config_file)
     experiments(config)
 
 
