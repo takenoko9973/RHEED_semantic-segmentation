@@ -25,6 +25,8 @@ class LabelPairPath:
 
 
 class ImageLabelLoader:
+    """画像とラベルの読み込み用クラス"""
+
     def __init__(self, label_map: dict[str, int], generate_per_labels: bool = False) -> None:
         self.label_map = label_map
         self.generate_per_labels = generate_per_labels
@@ -51,7 +53,10 @@ class SegmentationDataset(Dataset):
         image_label_loader: ImageLabelLoader,
         transform: BasicTransform | None = None,
     ) -> None:
-        self.label_pair_paths = label_pair_paths
+        # 0.0 は検証用にするため除外
+        self.label_pair_paths = list(
+            filter(lambda pair_path: pair_path.image_path.stem != "0.0", label_pair_paths)
+        )
         self.image_label_loader = image_label_loader
         self.transform = transform
 
