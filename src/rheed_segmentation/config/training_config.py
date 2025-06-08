@@ -1,5 +1,6 @@
 from typing import Any
 
+import torch
 from pydantic import BaseModel, ConfigDict, Field
 from torch import nn, optim
 from torch.nn.modules import loss
@@ -28,6 +29,9 @@ class ModelConfig(_BaseComponentConfig):
 class CriterionConfig(_BaseComponentConfig):
     def build(self) -> loss._Loss:
         cls = resolve_class(self.name, default_module=loss)
+
+        if "weight" in self.params:
+            self.params["weight"] = torch.Tensor(self.params["weight"])
 
         return cls(**self.params)
 
