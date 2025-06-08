@@ -32,12 +32,12 @@ ignore = [
     "EXE",  # flake8-executable
     "D400", "D415",  # docstringの末尾ピリオドの強制を無効化
     "FBT001", "FBT002", # 関数の引数にbooleanを許可
+    "ERA001",  # commented-out-code : コメントアウトしたpythonコードのエラー
 ]
 # 警告はするが、自動修正はしないエラー
 unfixable = [
     "F401",  # unused-import : 使用していないモジュールの自動削除停止
     "F841",  # unused-variable : 使用していない変数の自動削除停止
-    "ERA001",  # commented-out-code : コメントアウトしたpythonコードのエラー
 ]
 
 [tool.ruff.per-file-ignores]
