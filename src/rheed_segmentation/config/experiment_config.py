@@ -27,7 +27,7 @@ class ExperimentConfig:
             self.training = TrainingConfig(**self.training)
 
         if isinstance(self.transforms, list):
-            self.transforms = TransformPipelineConfig(self.transforms)
+            self.transforms = TransformPipelineConfig(transform_configs=self.transforms)
 
     def save_config(self, path: Path) -> None:
         with path.open(mode="w", encoding="utf-8") as f:
@@ -44,8 +44,9 @@ class Configs:
     def __post_init__(self) -> None:
         self.experiments = [
             ExperimentConfig(**experiment, experiment_config=experiment)
-            for experiment in self.experiments
             if isinstance(experiment, dict)
+            else experiment
+            for experiment in self.experiments
         ]
 
 
@@ -83,7 +84,7 @@ def load_config(
     if common_config_path is not None:
         experiment_dict = merge_dicts(common_dict, experiment_dict)
 
-    return ExperimentConfig(**experiment_dict)
+    return ExperimentConfig(**experiment_dict, experiment_config=experiment_dict)
 
 
 def load_configs(

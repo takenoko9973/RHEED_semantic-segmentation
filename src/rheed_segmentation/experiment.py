@@ -28,6 +28,6 @@ def training_experiment(experiment_config: ExperimentConfig) -> None:
     trainer.train(experiment_config.training.epoch)
 
 
-def experiments(config: Configs) -> None:
+def training_experiments(config: Configs) -> None:
     for experiment in config.experiments:
         training_experiment(experiment)

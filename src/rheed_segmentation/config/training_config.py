@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict, Field
 from torch import nn, optim
 from torch.nn.modules import loss
 from torch.optim import Optimizer
@@ -9,80 +9,94 @@ from torch.optim.lr_scheduler import LRScheduler
 from rheed_segmentation.utils import resolve_class
 
 
-@dataclass
-class ModelConfig:
+class _BaseComponentConfig(BaseModel):
     name: str
-    params: dict[str, Any] = field(default_factory=dict)
+    params: dict[str, Any] = Field(default_factory=dict)
 
+
+class ModelConfig(_BaseComponentConfig):
     def build(self) -> nn.Module:
         cls = resolve_class(self.name)
+
+        if not issubclass(cls, nn.Module):
+            msg = f"{self.name} is not a valid nn.Module subclass."
+            raise TypeError(msg)
+
         return cls(**self.params)
 
 
-@dataclass
-class CriterionConfig:
-    name: str
-    params: dict[str, Any] = field(default_factory=dict)
-
+class CriterionConfig(_BaseComponentConfig):
     def build(self) -> loss._Loss:
         cls = resolve_class(self.name, default_module=loss)
+
         return cls(**self.params)
 
 
-@dataclass
-class OptimizerConfig:
-    name: str
-    params: dict[str, Any] = field(default_factory=dict)
-
+class OptimizerConfig(_BaseComponentConfig):
     def build(self, model: nn.Module) -> Optimizer:
         cls = resolve_class(self.name, default_module=optim)
+
+        if not issubclass(cls, Optimizer):
+            msg = f"{self.name} is not a valid Optimizer."
+            raise TypeError(msg)
+
         return cls(params=model.parameters(), **self.params)
 
 
-@dataclass
-class SchedulerConfig:
-    name: str
-    params: dict[str, Any] = field(default_factory=dict)
-
+class SchedulerConfig(_BaseComponentConfig):
     def build(self, optimizer: Optimizer) -> LRScheduler:
         cls = resolve_class(self.name, default_module=optim.lr_scheduler)
+
+        if not issubclass(cls, LRScheduler):
+            msg = f"{self.name} is not a valid LRScheduler."
+            raise TypeError(msg)
+
         return cls(optimizer=optimizer, **self.params)
 
 
-@dataclass
-class TrainingConfig:
-    epoch: int
-    batch_size: int
-    model_config: ModelConfig
-    criterion_config: CriterionConfig
-    optimizer_config: OptimizerConfig
-    scheduler_config: SchedulerConfig | None
-    num_workers: int = 4
+class TrainingConfig(BaseModel):
+    epoch: int = Field(..., gt=1)
+    batch_size: int = Field(..., gt=1)
+    train_model_config: ModelConfig = Field(alias="model")  # YAMLのキー名と合わせる
+    criterion_config: CriterionConfig = Field(alias="criterion")
+    optimizer_config: OptimizerConfig = Field(alias="optimizer")
+    scheduler_config: SchedulerConfig | None = Field(default=None, alias="scheduler")
+    num_workers: int = Field(default=4, ge=1)
 
-    def __init__(
-        self,
-        epoch: int,
-        batch_size: int,
-        model: dict[str, Any],
-        criterion: dict[str, Any],
-        optimizer: dict[str, Any],
-        scheduler: dict[str, Any] | None = None,
-    ) -> None:
-        self.epoch = epoch
-        self.batch_size = batch_size
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+    )
 
-        self.model_config = ModelConfig(**model)
-        self.model = self.model_config.build()
+    @property
+    def model(self) -> nn.Module:
+        if not hasattr(self, "_model_instance"):
+            self._model_instance = self.train_model_config.build()
 
-        self.criterion_config = CriterionConfig(**criterion)
-        self.criterion = self.criterion_config.build()
+        return self._model_instance
 
-        self.optimizer_config = OptimizerConfig(**optimizer)
-        self.optimizer = self.optimizer_config.build(self.model)
+    @property
+    def criterion(self) -> loss._Loss:
+        if not hasattr(self, "_criterion_instance"):
+            self._criterion_instance = self.criterion_config.build()
 
-        if scheduler is not None:
-            self.scheduler_config = SchedulerConfig(**scheduler)
-            self.scheduler = self.scheduler_config.build(self.optimizer)
-        else:
-            self.scheduler_config = None
-            self.scheduler = None
+        return self._criterion_instance
+
+    @property
+    def optimizer(self) -> Optimizer:
+        if not hasattr(self, "_optimizer_instance"):
+            # model プロパティ経由でビルドされたインスタンスを利用
+            self._optimizer_instance = self.optimizer_config.build(self.model)
+
+        return self._optimizer_instance
+
+    @property
+    def scheduler(self) -> LRScheduler | None:
+        if not hasattr(self, "_scheduler_instance"):
+            if self.scheduler_config:
+                # optimizer プロパティ経由でビルドされたインスタンスを利用
+                self._scheduler_instance = self.scheduler_config.build(self.optimizer)
+            else:
+                self._scheduler_instance = None
+
+        return self._scheduler_instance
