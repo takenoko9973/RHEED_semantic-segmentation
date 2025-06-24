@@ -5,38 +5,37 @@ from dataclasses import dataclass
 from pathlib import Path
 
 RESULTS_ROOT_DIR = "results"
+TIMEZOME_JST = datetime.timezone(datetime.timedelta(hours=9))
 
 
 @dataclass
 class ResultDir:
-    name: str
-    path: Path
+    date_format = "%Y%m%d%H%M%S"
 
     def __init__(
         self,
         protocol: str,
-        date: str,
+        date: datetime.datetime,
         root_dir: str | Path = RESULTS_ROOT_DIR,
     ) -> None:
         self.protocol = protocol
         self.date = date
         self.root_dir = Path(root_dir)
 
-        self.name = f"{self.protocol}-{self.date}"
-        self.path = self.root_dir / self.name
         self.path.mkdir(parents=True, exist_ok=True)
 
     @classmethod
     def from_file_name(cls, file_name: str, root_dir: str | Path = RESULTS_ROOT_DIR) -> "ResultDir":
-        pattern = regex.compile(r"(.+)\-(\d{14})$")
+        pattern = regex.compile(r"(\d{14})\-(.+)$")
         match = pattern.match(file_name)
         if match is None:
             msg = f"Invalid file name format: {file_name}"
             raise ValueError(msg)
 
+        date = datetime.datetime.strptime(match.group(1), cls.date_format).astimezone(TIMEZOME_JST)
         return cls(
-            protocol=match.group(1),
-            date=match.group(2),
+            protocol=match.group(2),
+            date=date,
             root_dir=root_dir,
         )
 
@@ -53,6 +52,15 @@ class ResultDir:
         with file_path.open(mode="a", encoding="utf-8") as f:
             json.dump(history_data, f)
             f.write("\n")
+
+    @property
+    def name(self) -> str:
+        date_str = self.date.strftime(self.date_format)
+        return f"{date_str}-{self.protocol}"
+
+    @property
+    def path(self) -> Path:
+        return self.root_dir / self.name
 
 
 class ResultDirManager:
@@ -77,12 +85,10 @@ class ResultDirManager:
 
     def create_result_dir(self, protocol: str, date: datetime.datetime | None = None) -> ResultDir:
         if date is None:
-            date = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-
-        date_str = date.strftime("%Y%m%d%H%M%S")
+            date = datetime.datetime.now(TIMEZOME_JST)
 
         return ResultDir(
             protocol=protocol,
-            date=date_str,
+            date=date,
             root_dir=self.root_dir,
         )
