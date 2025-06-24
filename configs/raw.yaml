@@ -1,8 +1,6 @@
 protocol: "raw"
 comment: "前処理無し"
 training:
-  criterion:
-    name: "CrossEntropyLoss"
   optimizer:
     name: "torch.optim.Adam"
     params:

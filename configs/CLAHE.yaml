@@ -1,8 +1,6 @@
 protocol: "CLAHE"
 comment: "CLAHE(8x8 → 4x4)"
 training:
-  criterion:
-    name: "CrossEntropyLoss"
   optimizer:
     name: "torch.optim.Adam"
     params:

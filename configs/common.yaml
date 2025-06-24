@@ -1,18 +1,27 @@
-comment: "U-Net Dropout(TCB5-7)"
+# comment: "U-Net Dropout(TCB5-7)"
+comment: "U-Net、一括判定、STO,MgO真空"
 
-data_dirs: ["data/SC-STO-250422/expo50_gain60"]
+data_dirs:
+  - "SC-STO-250422/expo50_gain60/250425_900_fil-6_O2-0"
+  # - "SC-STO-250422/expo50_gain60/250424_900_fil-6_O2-10"
+  - "SC-MgO-250430/expo50_gain60/250508_900_fil-7_O2-0"
+
 labels:
   _background_: 0
   spot: 1
   streak: 2
   kikuchi: 3
-per_label: true
+per_label: false
 
 training:
-  epoch: 300
+  epoch: 200
   batch_size: 4
   model:
-    name: "rheed_segmentation.model.UNetDropout"
+    name: "rheed_segmentation.model.UNet"
     params:
       n_channels: 1
       n_classes: 4
+  criterion:
+    name: "CrossEntropyLoss"
+    # params:
+    #   weight: [0.3333, 1]

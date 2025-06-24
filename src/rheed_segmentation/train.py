@@ -28,7 +28,7 @@ class LossComputer:
         self, preds: Tensor, targets: Tensor | dict[str, Tensor]
     ) -> tuple[Tensor, dict[str, float]]:
         if isinstance(targets, Tensor):
-            loss: Tensor = self.criterion(preds, targets)
+            loss: Tensor = self.criterion(preds, targets.long())
             return loss, {"all": loss.item()}
 
         if isinstance(targets, dict):

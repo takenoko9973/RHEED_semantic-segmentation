@@ -123,9 +123,9 @@ def make_dataloaders(
     # ファイル一覧取得
     label_pair_paths = []
     for data_dir in data_dirs:
-        label_dir = data_dir / "label"
+        label_dir = Path("data", "label", data_dir)
         label_paths = sorted(label_dir.glob("**/*.json"))
-        label_pair_paths.append(load_paths(data_dir, label_paths, "raw"))
+        label_pair_paths.append(load_paths("data", label_paths, "raw"))
 
     label_pair_paths = list(itertools.chain.from_iterable(label_pair_paths))
 

@@ -2,8 +2,6 @@ protocol: "CLAHE_Gaussian"
 comment: "CLAHE(8x8 → 4x4), CLAHE前後でガウシアンフィルタ"
 
 training:
-  criterion:
-    name: "CrossEntropyLoss"
   optimizer:
     name: "torch.optim.Adam"
     params:
@@ -16,7 +14,7 @@ training:
 transforms:
   - name: "rheed_segmentation.transforms.GaussianBlur"
     params:
-      ksize: [3, 3]
+      ksize: [7, 7]
   - name: "rheed_segmentation.transforms.CLAHE"
     params:
       tile_grid_size: [8, 8]
@@ -25,7 +23,7 @@ transforms:
       tile_grid_size: [4, 4]
   - name: "rheed_segmentation.transforms.GaussianBlur"
     params:
-      ksize: [3, 3]
+      ksize: [7, 7]
   - name: "rheed_segmentation.transforms.AutoScaleTransform"
   - name: "Resize"
     params:
