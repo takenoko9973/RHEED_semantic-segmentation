@@ -13,8 +13,8 @@ config_files = [
 
 
 def main(config_files: list[Path]) -> None:
-    config = load_configs(config_files, common_config_file)
-    training_experiments(config)
+    configs = load_configs(config_files, common_config_file)
+    training_experiments(configs)
 
 
 if __name__ == "__main__":
