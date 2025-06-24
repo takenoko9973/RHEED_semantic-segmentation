@@ -5,14 +5,15 @@ from rheed_segmentation.config.transform_config import TargetMode
 from rheed_segmentation.data_loader import make_dataloaders
 from rheed_segmentation.train import Trainer
 from rheed_segmentation.utils.other import init_random_seed
-from rheed_segmentation.utils.result_manager import ResultDirManager
+from rheed_segmentation.utils.result_manager import ResultDateDir, ResultDirManager
 
 
-def training_experiment(experiment_config: ExperimentConfig, date: datetime.datetime) -> None:
+def training_experiment(
+    experiment_config: ExperimentConfig, result_date_dir: ResultDateDir
+) -> None:
     init_random_seed(917)
 
-    result_manager = ResultDirManager()
-    result_dir = result_manager.create_result_dir(protocol=experiment_config.protocol, date=date)
+    result_dir = result_date_dir.create_protocol_dir(protocol=experiment_config.protocol)
 
     experiment_config.save_config(result_dir.path / "config.yaml")
 
@@ -32,6 +33,8 @@ def training_experiment(experiment_config: ExperimentConfig, date: datetime.date
 
 def training_experiments(configs: Configs) -> None:
     date = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+    result_manager = ResultDirManager()
 
+    result_date_dir = result_manager.create_date_dir(date)
     for experiment in configs.experiments:
-        training_experiment(experiment, date)
+        training_experiment(experiment, result_date_dir)
