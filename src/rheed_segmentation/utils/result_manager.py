@@ -75,12 +75,14 @@ class ResultDirManager:
 
         return log_files[-1]
 
-    def create_result_dir(self, protocol: str) -> ResultDir:
-        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-        date = now.strftime("%Y%m%d%H%M%S")
+    def create_result_dir(self, protocol: str, date: datetime.datetime | None = None) -> ResultDir:
+        if date is None:
+            date = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+
+        date_str = date.strftime("%Y%m%d%H%M%S")
 
         return ResultDir(
             protocol=protocol,
-            date=date,
+            date=date_str,
             root_dir=self.root_dir,
         )
