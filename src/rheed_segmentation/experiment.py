@@ -1,5 +1,3 @@
-import datetime
-
 from rheed_segmentation.config import Configs, ExperimentConfig
 from rheed_segmentation.config.transform_config import TargetMode
 from rheed_segmentation.data_loader import make_dataloaders
@@ -32,9 +30,8 @@ def training_experiment(
 
 
 def training_experiments(configs: Configs) -> None:
-    date = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
     result_manager = ResultDirManager()
 
-    result_date_dir = result_manager.create_date_dir(date)
+    result_date_dir = result_manager.create_date_dir(configs.common_name)
     for experiment in configs.experiments:
         training_experiment(experiment, result_date_dir)

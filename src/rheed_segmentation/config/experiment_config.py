@@ -16,6 +16,7 @@ class ExperimentConfig:
     per_label: bool
     training: TrainingConfig
     transforms: TransformPipelineConfig
+    common_name: str = ""
     comment: str = ""
 
     experiment_config: dict = field(repr=False, default_factory=dict)
@@ -40,6 +41,7 @@ class ExperimentConfig:
 @dataclass
 class Configs:
     experiments: list[ExperimentConfig]
+    common_name: str = ""
 
     def __post_init__(self) -> None:
         self.experiments = [
@@ -48,6 +50,9 @@ class Configs:
             else experiment
             for experiment in self.experiments
         ]
+        experiment: ExperimentConfig = next(iter(self.experiments), None)
+        if experiment:
+            self.common_name = experiment.common_name
 
 
 def merge_dicts(base: dict, override: dict) -> dict:
