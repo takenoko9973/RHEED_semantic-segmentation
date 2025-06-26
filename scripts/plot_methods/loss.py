@@ -5,7 +5,18 @@ from matplotlib import pyplot as plt
 from rheed_segmentation.utils.result_manager import ResultDateDir
 
 
-def plot_loss(result_date_dir: ResultDateDir, raw_protocol: str, adjusted_protocol: str) -> None:
+def plot_loss(
+    result_date_dir: ResultDateDir,
+    raw_protocol: str,
+    adjusted_protocol: str,
+    is_update: bool = False,
+) -> None:
+    name = f"epoch_loss-{raw_protocol}-{adjusted_protocol}.svg"
+    plot_path = result_date_dir.path / name
+    if plot_path.exists() and not is_update:
+        return
+
+    # 読み込み
     raw_dir = result_date_dir.fetch_protocol_dir_by_name(raw_protocol)
     adjusted_dir = result_date_dir.fetch_protocol_dir_by_name(adjusted_protocol)
 
@@ -15,6 +26,7 @@ def plot_loss(result_date_dir: ResultDateDir, raw_protocol: str, adjusted_protoc
     raw_df = pd.read_json(raw_dir.history_path, lines=True)
     clahe_df = pd.read_json(adjusted_dir.history_path, lines=True)
 
+    # ========== 描画 ==============
     dpi = 100
     fig, ax = plt.subplots(figsize=(600 / dpi, 600 / dpi), dpi=dpi)
 
@@ -77,8 +89,6 @@ def plot_loss(result_date_dir: ResultDateDir, raw_protocol: str, adjusted_protoc
 
     # 出力
     fig.tight_layout()
-    name = f"epoch_loss-{raw_protocol}-{adjusted_protocol}.svg"
-    path = result_date_dir.path / name
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(path, format="svg")
+    plot_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(plot_path, format="svg")
     plt.close(fig)

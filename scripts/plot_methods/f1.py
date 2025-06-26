@@ -10,14 +10,38 @@ def calculate_moving_average(df: pd.Series, window: int) -> pd.Series:
     return df.rolling(window=window, min_periods=1).mean()
 
 
-def plot_f1(result_date_dir: ResultDateDir) -> None:
+def plot_f1(result_date_dir: ResultDateDir, is_update: bool = False) -> None:
     last_5_f1 = []
 
-    for result_protocol_dir in result_date_dir.fetch_protocol_dirs():
+    result_protocol_dirs = result_date_dir.fetch_protocol_dirs()
+    for result_protocol_dir in result_protocol_dirs:
+        name = f"epoch_f1-{result_protocol_dir.protocol}.svg"
+        plot_path = result_date_dir.path / name
+        if plot_path.exists() and not is_update:
+            continue
+
+        # 読み込み
         protocol_df = pd.read_json(result_protocol_dir.history_path, lines=True)
 
         protocol_df[["f1", "macro-f1"]] = protocol_df["confusion_matrix"].apply(
             lambda x: pd.Series(compute_f1_from_confusion_matrix(np.array(x)))
+        )
+
+        data_df = {
+            "Spot": calculate_moving_average(protocol_df["f1"].apply(lambda arr: arr[1]), 5),
+            "Streak": calculate_moving_average(protocol_df["f1"].apply(lambda arr: arr[2]), 5),
+            "Kikuchi": calculate_moving_average(protocol_df["f1"].apply(lambda arr: arr[3]), 5),
+            "Macro-F1": calculate_moving_average(protocol_df["macro-f1"], 5),
+        }
+
+        last_5_f1.append(
+            {
+                "protocol": result_protocol_dir.protocol,
+                "Spot": float(data_df["Spot"].iloc[-1]),
+                "Streak": float(data_df["Streak"].iloc[-1]),
+                "Kikuchi": float(data_df["Kikuchi"].iloc[-1]),
+                "Macro-F1": float(data_df["Macro-F1"].iloc[-1]),
+            }
         )
 
         # ===== グラフ描画 =====
@@ -49,12 +73,6 @@ def plot_f1(result_date_dir: ResultDateDir) -> None:
             "Kikuchi": "#07601A",
             "Macro-F1": "#000000",
         }
-        data_df = {
-            "Spot": calculate_moving_average(protocol_df["f1"].apply(lambda arr: arr[1]), 5),
-            "Streak": calculate_moving_average(protocol_df["f1"].apply(lambda arr: arr[2]), 5),
-            "Kikuchi": calculate_moving_average(protocol_df["f1"].apply(lambda arr: arr[3]), 5),
-            "Macro-F1": calculate_moving_average(protocol_df["macro-f1"], 5),
-        }
         for label in colors:  # noqa: PLC0206
             ax.plot(
                 protocol_df["epoch"],
@@ -74,19 +92,7 @@ def plot_f1(result_date_dir: ResultDateDir) -> None:
 
         # 保存
         fig.tight_layout()
-        name = f"epoch_f1-{result_protocol_dir.protocol}.svg"
-        path = result_date_dir.path / name
-        plt.savefig(path, format="svg")
+        plt.savefig(plot_path, format="svg")
         plt.close(fig)  # メモリを解放
-
-        last_5_f1.append(
-            {
-                "protocol": result_protocol_dir.protocol,
-                "Spot": float(data_df["Spot"].iloc[-1]),
-                "Streak": float(data_df["Streak"].iloc[-1]),
-                "Kikuchi": float(data_df["Kikuchi"].iloc[-1]),
-                "Macro-F1": float(data_df["Macro-F1"].iloc[-1]),
-            }
-        )
 
     pd.DataFrame(last_5_f1).to_csv(result_date_dir.path / "last5_f1.csv")

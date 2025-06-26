@@ -52,7 +52,7 @@ def inference(experiment_path: Path, data_dir: Path) -> None:
 
 def main() -> None:
     result_dir_manager = ResultDirManager()
-    result_date_dirs = result_dir_manager.fetch_result_dirs()
+    result_date_dirs = result_dir_manager.get_result_dirs()
 
     for result_date_dir in result_date_dirs:
         for result_protocol_dir in result_date_dir.fetch_protocol_dirs():

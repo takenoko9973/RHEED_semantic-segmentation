@@ -41,7 +41,8 @@
                 "mhutchie.git-graph",
                 "tamasfe.even-better-toml",
                 "formulahendry.code-runner",
-                "redhat.vscode-yaml"
+                "redhat.vscode-yaml",
+                "jock.svg"
             ]
         }
     },
