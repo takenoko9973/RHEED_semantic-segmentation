@@ -3,8 +3,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from sklearn.metrics import confusion_matrix
-from torch import Tensor, nn, optim
-from torch._prims_common import DeviceLikeType
+from torch import Tensor
 from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -12,7 +11,7 @@ from tqdm import tqdm
 from rheed_segmentation import utils
 
 from .config.training_config import TrainingConfig
-from .utils.postprocessing import merge_predictions_by_priority
+from .utils.postprocessing import merge_masks_by_priority, merge_predictions_by_priority
 from .utils.result_manager import ResultDir
 
 
@@ -164,21 +163,13 @@ class Trainer:
 
         return total_loss / len(self.val_loader), cm
 
-    def _merge_target_dict(self, masks: dict[str, Tensor]) -> Tensor:
-        label_map = torch.zeros_like(next(iter(masks.values())), dtype=torch.long)  # (B, H, W)
-
-        for class_idx, label in enumerate(masks):
-            label_mask = masks[label] > 0  # ラベルあり部分
-            label_map[label_mask] = class_idx + 1  # 背景=0と仮定
-
-        return label_map
-
     def _compute_confusion_matrix(
         self, outputs: Tensor, masks: Tensor | dict[str, Tensor], num_classes: int
     ) -> np.ndarray:
         probs = torch.softmax(outputs, dim=1)
+
         if isinstance(masks, dict):
-            true_labels = self._merge_target_dict(masks)
+            true_labels = merge_masks_by_priority(masks)
             preds = merge_predictions_by_priority(probs)
         else:
             true_labels = masks

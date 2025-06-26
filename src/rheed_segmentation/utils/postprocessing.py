@@ -29,7 +29,29 @@ def merge_predictions_by_priority(
 
     for label in label_priority:
         score = logits[:, label, :, :] - bg
-        mask = (merged_pred == background_index) & (score > 0)
-        merged_pred[mask] = label
+        mask_indexes = (merged_pred == background_index) & (score > 0)
+        merged_pred[mask_indexes] = label
 
     return merged_pred
+
+
+def merge_masks_by_priority(
+    masks: dict[str, torch.Tensor],
+    background_label: str = "_background_",
+    label_priority: list[int] | None = None,
+) -> torch.Tensor:
+    B, H, W = masks[next(iter(masks))].shape  # noqa: N806
+    device = masks[next(iter(masks))].device
+
+    labels = enumerate(masks.keys(), start=1)
+    if label_priority is None:
+        # 背景以外のラベルを昇順に並べる
+        label_priority = [(index, label) for index, label in labels if label != background_label]
+
+    merged_mask = torch.zeros((B, H, W), dtype=torch.long, device=device)
+    for index, label in label_priority:
+        mask = masks[label]
+        mask = (merged_mask == 0) & (mask == 1)
+        merged_mask[mask] = index
+
+    return merged_mask
