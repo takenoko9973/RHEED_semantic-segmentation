@@ -19,25 +19,25 @@ def shape_to_mask(
     draw = ImageDraw.Draw(mask)
     xy = [tuple(point) for point in points]
     if shape_type == "circle":
-        assert len(xy) == 2, "Shape of shape_type=circle must have 2 points"
+        assert len(xy) == 2, "Shape of shape_type=circle must have 2 points"  # noqa: PLR2004, S101
         (cx, cy), (px, py) = xy
         d = math.sqrt((cx - px) ** 2 + (cy - py) ** 2)
         draw.ellipse([cx - d, cy - d, cx + d, cy + d], outline=1, fill=1)
     elif shape_type == "rectangle":
-        assert len(xy) == 2, "Shape of shape_type=rectangle must have 2 points"
+        assert len(xy) == 2, "Shape of shape_type=rectangle must have 2 points"  # noqa: PLR2004, S101
         draw.rectangle(xy, outline=1, fill=1)
     elif shape_type == "line":
-        assert len(xy) == 2, "Shape of shape_type=line must have 2 points"
+        assert len(xy) == 2, "Shape of shape_type=line must have 2 points"  # noqa: PLR2004, S101
         draw.line(xy=xy, fill=1, width=line_width)
     elif shape_type == "linestrip":
         draw.line(xy=xy, fill=1, width=line_width)
     elif shape_type == "point":
-        assert len(xy) == 1, "Shape of shape_type=point must have 1 points"
+        assert len(xy) == 1, "Shape of shape_type=point must have 1 points"  # noqa: S101
         cx, cy = xy[0]
         r = point_size
         draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=1, fill=1)
     elif shape_type in [None, "polygon"]:
-        assert len(xy) > 2, "Polygon must have points more than 2"
+        assert len(xy) > 2, "Polygon must have points more than 2"  # noqa: PLR2004, S101
         draw.polygon(xy=xy, outline=1, fill=1)
     else:
         msg = f"shape_type={shape_type!r} is not supported."
@@ -88,12 +88,45 @@ def shapes_to_label(
     return cls, ins
 
 
-def label_colormap(n_label: int = 256, value: float | None = None):
+def create_mask(json_data: dict, labels: dict[str, int]) -> npt.NDArray[np.int32]:
+    img_shape = json_data["imageHeight"], json_data["imageWidth"]
+
+    full_mask, _ = shapes_to_label(
+        img_shape,
+        sorted(json_data["shapes"], key=lambda shape: labels[shape["label"]], reverse=True),
+        labels,
+    )
+
+    return full_mask
+
+
+def create_masks_per_labels(
+    json_data: dict, labels: dict[str, int]
+) -> dict[str, npt.NDArray[np.int32]]:
+    img_shape = json_data["imageHeight"], json_data["imageWidth"]
+
+    masks = {}
+    for label, label_id in labels.items():
+        if label_id <= 0:
+            continue
+
+        shapes = filter(lambda shape: shape["label"] == label, json_data["shapes"])
+        mask, _ = shapes_to_label(
+            img_shape,
+            shapes,
+            {"_background_": 0, label: 1},
+        )
+        masks[label] = mask
+
+    return masks
+
+
+def label_colormap(n_label: int = 256, value: float | None = None) -> np.ndarray:
     """Label colormap.
 
     Parameters
     ----------
-    n_labels: int
+    n_label: int
         Number of labels (default: 256).
     value: float or int
         Value scale or value of label color in HSV space.
@@ -105,8 +138,8 @@ def label_colormap(n_label: int = 256, value: float | None = None):
 
     """
 
-    def bitget(byteval, idx: int) -> npt.NDArray[np.uint8]:
-        shape = byteval.shape + (8,)
+    def bitget(byteval: np.ndarray, idx: int) -> npt.NDArray[np.uint8]:
+        shape = (*byteval.shape, 8)
         return np.unpackbits(byteval).reshape(shape)[..., -1 - idx]
 
     i = np.arange(n_label, dtype=np.uint8)
@@ -127,15 +160,15 @@ def label_colormap(n_label: int = 256, value: float | None = None):
         hsv = rgb2hsv(cmap.reshape(1, -1, 3))
         if isinstance(value, float):
             hsv[:, 1:, 2] = hsv[:, 1:, 2].astype(float) * value
-        else:
-            assert isinstance(value, int)
+        elif isinstance(value, int):
             hsv[:, 1:, 2] = value
+        else:
+            raise ValueError
         cmap = hsv2rgb(hsv).reshape(-1, 3)
     return cmap
 
 
 def rgb2hsv(rgb: np.ndarray) -> np.ndarray:
-    # type: (np.ndarray) -> np.ndarray
     """Convert rgb to hsv.
 
     Parameters
@@ -155,7 +188,6 @@ def rgb2hsv(rgb: np.ndarray) -> np.ndarray:
 
 
 def hsv2rgb(hsv: np.ndarray) -> np.ndarray:
-    # type: (np.ndarray) -> np.ndarray
     """Convert hsv to rgb.
 
     Parameters
@@ -177,9 +209,11 @@ def hsv2rgb(hsv: np.ndarray) -> np.ndarray:
 def convert_color_lbl(lbl: np.ndarray) -> Image.Image:
     # Assume label ranses [-1, 254] for int32,
     # and [0, 255] for uint8 as VOC.
-    if lbl.min() >= -1 and lbl.max() < 255:
+    if lbl.min() >= -1 and lbl.max() < 0xFF:  # noqa: PLR2004
         lbl_pil = Image.fromarray(lbl.astype(np.uint8), mode="P")
         colormap = imgviz.label_colormap()
         lbl_pil.putpalette(colormap.flatten())
         return lbl_pil
-    raise ValueError("[%s] Cannot save the pixel-wise class label as PNG. ")
+
+    msg = "[%s] Cannot save the pixel-wise class label as PNG. "
+    raise ValueError(msg)

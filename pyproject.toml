@@ -1,16 +1,16 @@
 [build-system]
-requires = ["setuptools", "setuptools_scm"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "RHEED_semantic_segmentation"
+name = "rheed-segmentation"
 version = "0.1.0"
-description = "RHEED セグメンテーション"
-classifiers = [
-    "Programming Language :: Python :: 3.12",
-]
-requires-python = "==3.12.*"
-dependencies = []
+requires-python = ">=3.12"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# ========================================================
 
 [tool.ruff]
 target-version = "py312"
@@ -32,12 +32,12 @@ ignore = [
     "EXE",  # flake8-executable
     "D400", "D415",  # docstringの末尾ピリオドの強制を無効化
     "FBT001", "FBT002", # 関数の引数にbooleanを許可
+    "ERA001",  # commented-out-code : コメントアウトしたpythonコードのエラー
 ]
 # 警告はするが、自動修正はしないエラー
 unfixable = [
     "F401",  # unused-import : 使用していないモジュールの自動削除停止
     "F841",  # unused-variable : 使用していない変数の自動削除停止
-    "ERA001",  # commented-out-code : コメントアウトしたpythonコードのエラー
 ]
 
 [tool.ruff.per-file-ignores]

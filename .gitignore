@@ -1,8 +1,9 @@
 # Data
 data/*
-downloads/*
-!downloads/.gitkeep
+!data/.gitkeep
 preds/*
+results/*
+!results/.gitkeep
 models/*
 !models/.gitkeep
 

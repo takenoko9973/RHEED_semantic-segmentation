@@ -1,0 +1,26 @@
+# comment: "U-Net, per_label, Dropout(TCB5-7)"
+comment: "test用"
+common_name: "test"
+
+data_dirs:
+  - "SC-STO-250422/expo50_gain60/250425_900_fil-6_O2-0"
+
+labels:
+  _background_: 0
+  spot: 1
+  streak: 2
+  kikuchi: 3
+per_label: true
+
+training:
+  epoch: 10
+  batch_size: 4
+  model:
+    name: "rheed_segmentation.model.UNet"
+    params:
+      n_channels: 1
+      n_classes: 4
+  criterion:
+    name: "CrossEntropyLoss"
+    # params:
+    #   weight: [0.3333, 1]

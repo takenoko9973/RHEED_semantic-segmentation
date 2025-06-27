@@ -1,0 +1,23 @@
+protocol: "raw"
+comment: "前処理無し"
+training:
+  optimizer:
+    name: "torch.optim.Adam"
+    params:
+      lr: 0.001
+  scheduler:
+    name: "torch.optim.lr_scheduler.StepLR"
+    params:
+      step_size: 10
+      gamma: 0.8
+transforms:
+  - name: "rheed_segmentation.transforms.AutoScaleTransform"
+  - name: "Resize"
+    params:
+      height: 135
+      width: 180
+  - name: "HorizontalFlip"
+    target: "train"
+    params:
+      p: 0.5
+  - name: "ToTensorV2"
