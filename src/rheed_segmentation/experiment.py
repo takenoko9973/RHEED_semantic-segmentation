@@ -11,14 +11,18 @@ def training_experiment(
 ) -> None:
     init_random_seed(917)
 
+    # 学習モデル保存先作成
     result_dir = result_date_dir.create_protocol_dir(protocol=experiment_config.protocol)
 
+    # 設定保存
     experiment_config.save_config(result_dir.path / "config.yaml")
 
+    # データ取得
     train_transform = experiment_config.build_transform_compose(TargetMode.TRAIN)
     val_transform = experiment_config.build_transform_compose(TargetMode.VAL)
     train_loader, val_loader = make_dataloaders(experiment_config, train_transform, val_transform)
 
+    # 学習
     trainer = Trainer(
         experiment_config.training,
         len(experiment_config.labels),
@@ -33,5 +37,7 @@ def training_experiments(configs: Configs) -> None:
     result_manager = ResultDirManager()
 
     result_date_dir = result_manager.create_date_dir(configs.common_name)
+    configs.save_common_config(result_date_dir.path / "common_config.yaml")
+
     for experiment in configs.experiments:
         training_experiment(experiment, result_date_dir)

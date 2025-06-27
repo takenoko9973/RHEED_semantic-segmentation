@@ -3,9 +3,11 @@ from typing import Any
 
 import albumentations as albu
 from albumentations.core.transforms_interface import BasicTransform
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field, field_validator
 
 from rheed_segmentation.utils import enum_or_default, resolve_class
+
+from .core import BaseConfig
 
 
 class TargetMode(Enum):
@@ -14,7 +16,7 @@ class TargetMode(Enum):
     BOTH = "both"
 
 
-class TransformConfig(BaseModel):
+class TransformConfig(BaseConfig):
     """画像変換処理の設定を定義"""
 
     name: str
@@ -39,7 +41,7 @@ class TransformConfig(BaseModel):
             raise ValueError(msg) from e
 
 
-class TransformPipelineConfig(BaseModel):
+class TransformPipelineConfig(BaseConfig):
     """変換処理のパイプライン全体を定義"""
 
     transform_configs: list[TransformConfig] = Field(default_factory=list)

@@ -1,4 +1,4 @@
-from .experiment_config import Configs, ExperimentConfig, load_config, load_configs
+from .experiment_config import Configs, ExperimentConfig
 from .training_config import (
     CriterionConfig,
     ModelConfig,

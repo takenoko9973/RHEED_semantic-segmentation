@@ -1,11 +1,9 @@
 # comment: "U-Net, per_label, Dropout(TCB5-7)"
-comment: "U-Net、ラベルごと、STO(e-6,10), MgO(e-5 (half))、バックグラウンド損失 1/3"
+comment: "test用"
 common_name: "test"
 
 data_dirs:
   - "SC-STO-250422/expo50_gain60/250425_900_fil-6_O2-0"
-  - "SC-STO-250422/expo50_gain60/250424_900_fil-6_O2-10"
-  - "SC-MgO-250430/expo50_gain60/250508_900_fil-7_O2-0"
 
 labels:
   _background_: 0
@@ -15,7 +13,7 @@ labels:
 per_label: true
 
 training:
-  epoch: 300
+  epoch: 10
   batch_size: 4
   model:
     name: "rheed_segmentation.model.UNet"

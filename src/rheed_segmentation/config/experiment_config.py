@@ -1,15 +1,16 @@
-from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import albumentations as albu
 import yaml
+from pydantic import Field, field_validator, model_validator
 
+from .core import BaseConfig
 from .training_config import TrainingConfig
 from .transform_config import TargetMode, TransformPipelineConfig
 
 
-@dataclass
-class ExperimentConfig:
+class ExperimentConfig(BaseConfig):
     protocol: str
     data_dirs: list[Path]
     labels: dict[str, int]
@@ -19,40 +20,23 @@ class ExperimentConfig:
     common_name: str = ""
     comment: str = ""
 
-    experiment_config: dict = field(repr=False, default_factory=dict)
-
-    def __post_init__(self) -> None:
-        self.data_dirs = [Path(data_dir) for data_dir in self.data_dirs]
-
-        if isinstance(self.training, dict):
-            self.training = TrainingConfig(**self.training)
-
-        if isinstance(self.transforms, list):
-            self.transforms = TransformPipelineConfig(transform_configs=self.transforms)
-
-    def save_config(self, path: Path) -> None:
-        with path.open(mode="w", encoding="utf-8") as f:
-            yaml.safe_dump(self.experiment_config, f, allow_unicode=True)
+    @field_validator("transforms", mode="before")
+    @classmethod
+    def _wrap_transforms_in_dict(cls, v: Any) -> Any:  # noqa: ANN401
+        """YAMLのリストをTransformPipelineConfigが解釈できる辞書に変換する"""
+        if isinstance(v, list):
+            return {"transform_configs": v}
+        return v
 
     def build_transform_compose(self, target: TargetMode | str) -> albu.Compose:
         return self.transforms.to_transform_compose(target)
 
+    def save_config(self, path: Path) -> None:
+        config_dict = self.model_dump(mode="json", by_alias=True, exclude_none=True)
 
-@dataclass
-class Configs:
-    experiments: list[ExperimentConfig]
-    common_name: str = ""
-
-    def __post_init__(self) -> None:
-        self.experiments = [
-            ExperimentConfig(**experiment, experiment_config=experiment)
-            if isinstance(experiment, dict)
-            else experiment
-            for experiment in self.experiments
-        ]
-        experiment: ExperimentConfig = next(iter(self.experiments), None)
-        if experiment:
-            self.common_name = experiment.common_name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open(mode="w", encoding="utf-8") as f:
+            yaml.safe_dump(config_dict, f, allow_unicode=True, sort_keys=False)
 
 
 def merge_dicts(base: dict, override: dict) -> dict:
@@ -76,27 +60,44 @@ def merge_dicts(base: dict, override: dict) -> dict:
     return result
 
 
-def load_config(
-    config_path: str | Path, common_config_path: str | Path | None = None
-) -> ExperimentConfig:
-    if common_config_path is not None:
-        with Path(common_config_path).open(mode="r", encoding="utf-8") as f:
-            common_dict = yaml.safe_load(f)
+class Configs(BaseConfig):
+    experiments: list[ExperimentConfig]
+    common_config: dict = Field(repr=False, default_factory=dict)
+    common_name: str = ""
 
-    with Path(config_path).open(mode="r", encoding="utf-8") as f:
-        experiment_dict = yaml.safe_load(f)
+    @model_validator(mode="before")
+    @classmethod
+    def from_paths(cls, data: dict) -> dict[str, Any]:
+        """ファイルパスの辞書からモデルを構築するためのメインロジック。"""
+        if not isinstance(data, dict):
+            msg = "Initialization data for ConfigsPydantic must be a dictionary."
+            raise TypeError(msg)
 
-    if common_config_path is not None:
-        experiment_dict = merge_dicts(common_dict, experiment_dict)
+        config_paths = data.get("config_paths", [])
+        common_config_path = data.get("common_config_path")
 
-    return ExperimentConfig(**experiment_dict, experiment_config=experiment_dict)
+        # 共通設定ファイル読み込み
+        common_dict = {}
+        if common_config_path and Path(common_config_path).exists():
+            with Path(common_config_path).open(mode="r", encoding="utf-8") as f:
+                common_dict = yaml.safe_load(f)
 
+        # 各設定ファイルを読み込み、共通設定とマージ
+        loaded_experiments = []
+        for config_path in config_paths:
+            with Path(config_path).open(mode="r", encoding="utf-8") as f:
+                experiment_dict = yaml.safe_load(f)
 
-def load_configs(
-    config_paths: list[str | Path], common_config_path: str | Path | None = None
-) -> Configs:
-    experiment_configs = [
-        load_config(config_path, common_config_path) for config_path in config_paths
-    ]
+            merged_dict = merge_dicts(common_dict, experiment_dict)
+            loaded_experiments.append(merged_dict)
 
-    return Configs(experiment_configs)
+        # モデルのフィールドに合わせた辞書を返却する
+        return {
+            "experiments": loaded_experiments,
+            "common_config": common_dict,
+            "common_name": common_dict.get("common_name", ""),
+        }
+
+    def save_common_config(self, path: Path) -> None:
+        with path.open(mode="w", encoding="utf-8") as f:
+            yaml.safe_dump(self.common_config, f, allow_unicode=True)

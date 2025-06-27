@@ -1,7 +1,7 @@
 from typing import Any
 
 import torch
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 from torch import nn, optim
 from torch.nn.modules import loss
 from torch.optim import Optimizer
@@ -9,8 +9,10 @@ from torch.optim.lr_scheduler import LRScheduler
 
 from rheed_segmentation.utils import resolve_class
 
+from .core import BaseConfig
 
-class _BaseComponentConfig(BaseModel):
+
+class _BaseComponentConfig(BaseConfig):
     name: str
     params: dict[str, Any] = Field(default_factory=dict)
 
@@ -58,7 +60,7 @@ class SchedulerConfig(_BaseComponentConfig):
         return cls(optimizer=optimizer, **self.params)
 
 
-class TrainingConfig(BaseModel):
+class TrainingConfig(BaseConfig):
     epoch: int = Field(..., gt=1)
     batch_size: int = Field(..., gt=1)
     train_model_config: ModelConfig = Field(alias="model")  # YAMLのキー名と合わせる
@@ -66,11 +68,6 @@ class TrainingConfig(BaseModel):
     optimizer_config: OptimizerConfig = Field(alias="optimizer")
     scheduler_config: SchedulerConfig | None = Field(default=None, alias="scheduler")
     num_workers: int = Field(default=4, ge=1)
-
-    model_config = ConfigDict(
-        populate_by_name=True,
-        arbitrary_types_allowed=True,
-    )
 
     @property
     def model(self) -> nn.Module:

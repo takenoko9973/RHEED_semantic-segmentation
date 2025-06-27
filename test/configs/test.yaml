@@ -1,22 +1,6 @@
 protocol: "test"
-data_dirs: ["data/SC-STO-250422/expo50_gain60"]
-per_label: true
-labels:
-  _background_: 0
-  spot: 1
-  streak: 2
-  kikuchi: 3
 
 training:
-  epoch: 10
-  batch_size: 4
-  model:
-    name: "rheed_segmentation.model.UNet"
-    params:
-      n_channels: 1
-      n_classes: 4
-  criterion:
-    name: "CrossEntropyLoss"
   optimizer:
     name: "torch.optim.Adam"
     params:
