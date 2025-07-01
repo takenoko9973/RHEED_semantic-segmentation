@@ -20,6 +20,23 @@ class ExperimentConfig(BaseConfig):
     common_name: str = ""
     comment: str = ""
 
+    @classmethod
+    def from_path(
+        cls, config_path: Path | str, common_config_path: Path | str | None = None
+    ) -> "ExperimentConfig":
+        # 共通設定ファイル読み込み
+        common_dict = {}
+        if common_config_path and Path(common_config_path).exists():
+            with Path(common_config_path).open(mode="r", encoding="utf-8") as f:
+                common_dict = yaml.safe_load(f)
+
+        # 各設定ファイルを読み込み、共通設定とマージ
+        with Path(config_path).open(mode="r", encoding="utf-8") as f:
+            experiment_dict = yaml.safe_load(f)
+
+        merged_dict = merge_dicts(common_dict, experiment_dict)
+        return cls.model_validate(merged_dict)
+
     @field_validator("transforms", mode="before")
     @classmethod
     def _wrap_transforms_in_dict(cls, v: Any) -> Any:  # noqa: ANN401
