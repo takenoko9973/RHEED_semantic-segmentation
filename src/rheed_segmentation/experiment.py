@@ -11,6 +11,8 @@ def training_experiment(
 ) -> None:
     init_random_seed(917)
 
+    print(f"protocol: {experiment_config.protocol}, comment: {experiment_config.comment}")
+
     # 学習モデル保存先作成
     result_dir = result_date_dir.create_protocol_dir(protocol=experiment_config.protocol)
 
