@@ -69,8 +69,8 @@ def plot_f1(result_date_dir: ResultDateDir, is_update: bool = False) -> None:
         plt.rcParams["lines.linewidth"] = 2
         colors = {
             "Spot": "#DD0806",
-            "Streak": "#0000D4",
-            "Kikuchi": "#07601A",
+            "Streak": "#008000",
+            "Kikuchi": "#f2bf01",
             "Macro-F1": "#000000",
         }
         for label in colors:  # noqa: PLC0206
