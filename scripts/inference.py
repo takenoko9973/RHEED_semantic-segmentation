@@ -4,7 +4,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from rheed_segmentation.config.experiment_config import load_config
+# from rheed_segmentation.config.experiment_config import load_config
+from rheed_segmentation.config.experiment_config import ExperimentConfig
 from rheed_segmentation.utils.result_manager import ResultDirManager
 from rheed_segmentation.visualization.model import load_model, predict
 from rheed_segmentation.visualization.preprocess import preprocess
@@ -35,8 +36,12 @@ def inference(experiment_path: Path, data_dir: Path) -> None:
     if pred_path.exists():
         return
 
-    config = load_config(config_path)
-    model = load_model(model_path, config.training)
+    try:
+        config = ExperimentConfig.from_path(config_path)
+        model = load_model(model_path, config.training)
+    except FileNotFoundError:
+        print("読み込み時にエラーが発生しました")
+        return
 
     for rot in ["0", "45"]:
         image_path = data_root / "raw" / data_dir / rot / "0.0.tiff"
@@ -57,6 +62,7 @@ def main() -> None:
     for result_date_dir in result_date_dirs:
         for result_protocol_dir in result_date_dir.fetch_protocol_dirs():
             print(result_protocol_dir)
+
             for data_dir in sample_image_paths:
                 inference(result_protocol_dir.path, Path(data_dir))
 
