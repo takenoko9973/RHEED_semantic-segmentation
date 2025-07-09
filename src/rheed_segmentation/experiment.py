@@ -1,6 +1,6 @@
 from rheed_segmentation.config import Configs, ExperimentConfig
 from rheed_segmentation.config.transform_config import TargetMode
-from rheed_segmentation.data_loader import make_dataloaders
+from rheed_segmentation.dataset.data_loader import make_dataloaders
 from rheed_segmentation.train import Trainer
 from rheed_segmentation.utils.other import init_random_seed
 from rheed_segmentation.utils.result_manager import ResultDateDir, ResultDirManager

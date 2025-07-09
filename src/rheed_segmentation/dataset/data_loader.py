@@ -1,7 +1,4 @@
-import itertools
 import json
-import random
-from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -9,19 +6,11 @@ from albumentations.core.transforms_interface import BasicTransform
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
-from .config.experiment_config import ExperimentConfig
-from .utils import labelme
+from rheed_segmentation.config.experiment_config import ExperimentConfig
+from rheed_segmentation.utils import labelme
 
-
-@dataclass(frozen=True)
-class LabelPairPath:
-    image_path: Path
-    json_path: Path
-    filename: str | None = None
-
-    def __post_init__(self) -> None:
-        if self.filename is None:
-            object.__setattr__(self, "filename", self.image_path.name)
+from .label_pair_path import LabelPairPath
+from .utils import collect_dataset_paths, split_data
 
 
 class ImageLabelLoader:
@@ -80,54 +69,21 @@ class SegmentationDataset(Dataset):
         return image, mask
 
 
-def split_data(
-    label_path_pair: list[LabelPairPath], val_ratio: float = 0.2
-) -> tuple[list[LabelPairPath], list[LabelPairPath]]:
-    random.shuffle(label_path_pair)
-
-    val_size = int(len(label_path_pair) * val_ratio)
-    val_paths = label_path_pair[:val_size]
-    train_paths = label_path_pair[val_size:]
-    return train_paths, val_paths
-
-
-def load_paths(root_dir: Path, mask_paths: list[Path], image_type: str) -> list[LabelPairPath]:
-    img_paths = []
-
-    for mask_path in mask_paths:
-        relative = mask_path.relative_to(root_dir)
-        parts = list(relative.parts)
-        parts[0] = image_type
-
-        image_path = Path(root_dir, *parts).with_suffix(".tiff")
-        if not image_path.exists():
-            msg = f"Image not found: {image_path}"
-            raise FileNotFoundError(msg)
-
-        img_paths.append(image_path)
-
-    return [LabelPairPath(img, mask) for img, mask in zip(img_paths, mask_paths, strict=True)]
-
-
 def make_dataloaders(
     config: ExperimentConfig,
     train_transform: BasicTransform | None = None,
     val_transform: BasicTransform | None = None,
 ) -> tuple[DataLoader, DataLoader]:
     # 必要な情報を config から取得
-    data_dirs = config.data_dirs
     batch_size: int = config.training.batch_size
     num_workers: int = config.training.num_workers
     per_labels: bool = config.per_label
 
     # ファイル一覧取得
-    label_pair_paths = []
-    for data_dir in data_dirs:
-        label_dir = Path("data", "label", data_dir)
-        label_paths = sorted(label_dir.glob("**/*.json"))
-        label_pair_paths.append(load_paths("data", label_paths, "raw"))
-
-    label_pair_paths = list(itertools.chain.from_iterable(label_pair_paths))
+    label_pair_paths = collect_dataset_paths(Path("data"), config.data_dirs)
+    if not label_pair_paths:
+        msg = "指定されたディレクトリにデータが見つかりませんでした。"
+        raise FileNotFoundError(msg)
 
     # ランダム分割
     train_paths, val_paths = split_data(label_pair_paths, val_ratio=0.2)
