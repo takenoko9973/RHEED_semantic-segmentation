@@ -139,6 +139,10 @@ class ResultDirManager:
         result_dirs = self.get_result_dirs()
         return next(iter(result_dirs), None)
 
+    def get_result_dir_from_name(self, name: str) -> ResultDateDir:
+        result_dirs = self.get_result_dirs()
+        return next(filter(lambda result_dir: result_dir.dir_name == name, result_dirs), None)
+
     def create_date_dir(self, name: str | None = None) -> ResultDateDir:
         current_date = datetime.datetime.now(TIMEZOME_JST)
 

@@ -1,14 +1,10 @@
 import re
 from pathlib import Path
 
-import numpy as np
-from PIL import Image
-
-# from rheed_segmentation.config.experiment_config import load_config
 from rheed_segmentation.config.experiment_config import ExperimentConfig
 from rheed_segmentation.utils.result_manager import ResultDirManager
-from rheed_segmentation.visualization.model import load_model, predict
-from rheed_segmentation.visualization.preprocess import preprocess
+from rheed_segmentation.visualization.inference import inference
+from rheed_segmentation.visualization.model import load_model
 from rheed_segmentation.visualization.visualize import save_prediction
 
 model_name = "best.pth"
@@ -26,7 +22,7 @@ sample_image_paths = [
 ]
 
 
-def inference(experiment_path: Path, data_dir: Path) -> None:
+def inference_0(experiment_path: Path, data_dir: Path) -> None:
     data_name = re.match(r".+(O2\-\d+)", data_dir.name)[1]
 
     config_path = experiment_path / "config.yaml"
@@ -45,14 +41,15 @@ def inference(experiment_path: Path, data_dir: Path) -> None:
 
     for rot in ["0", "45"]:
         image_path = data_root / "raw" / data_dir / rot / "0.0.tiff"
+        save_path = pred_path / f"{rot}.tiff"
 
         if not image_path.exists():
             continue
+        if save_path.exists():
+            continue
 
-        image = np.array(Image.open(image_path)).astype(np.uint16)
-        image_tensor = preprocess(image, config.transforms)
-        pred = predict(model, image_tensor, config.per_label)[0]
-        save_prediction(pred.numpy(), pred_path / f"{rot}.tiff")
+        pred = inference(config, model, image_path)
+        save_prediction(pred, save_path)
 
 
 def main() -> None:
@@ -64,7 +61,7 @@ def main() -> None:
             print(result_protocol_dir)
 
             for data_dir in sample_image_paths:
-                inference(result_protocol_dir.path, Path(data_dir))
+                inference_0(result_protocol_dir.path, Path(data_dir))
 
 
 if __name__ == "__main__":
