@@ -4,6 +4,8 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class LabelPairPath:
+    """画像ファイルとJSONファイルのパスをペアで保持"""
+
     image_path: Path
     json_path: Path
     filename: str | None = None

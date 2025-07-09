@@ -1,10 +1,11 @@
 import itertools
 from pathlib import Path
 
-from rheed_segmentation.dataset.path import LabelPairPath
+from .path import LabelPairPath
 
 
 def load_paths(root_dir: Path, mask_paths: list[Path], image_type: str) -> list[LabelPairPath]:
+    """ラベルパスリストから、対応する画像パスを見つけてペアを作成"""
     img_paths = []
 
     for mask_path in mask_paths:
@@ -28,18 +29,7 @@ def collect_dataset_paths(
     raw_dir_name: str = "raw",
     label_dir_name: str = "label",
 ) -> list[LabelPairPath]:
-    """設定に基づいて、ラベルファイルとそれに対応する画像ファイルのペアのリストを作成します。
-
-    Args:
-        base_data_dir: データセット全体のベースディレクトリ ('data'など)。
-        target_data_dirs: 収集対象のデータディレクトリ名のリスト。
-        raw_dir_name: Raw画像データが格納されているディレクトリ名。
-        label_dir_name: ラベルデータが格納されているディレクトリ名。
-
-    Returns:
-        LabelPairPath のリスト
-
-    """
+    """設定に基づいて、ラベルファイルとそれに対応する画像ファイルのペアのリストを作成"""
     # データファイルパス一覧取得
     all_label_pair_paths = []
     for data_dir in target_data_dirs:

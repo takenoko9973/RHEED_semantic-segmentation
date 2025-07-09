@@ -8,11 +8,13 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from rheed_segmentation import utils
-
-from .config.training_config import TrainingConfig
-from .utils.postprocessing import merge_masks_by_priority, merge_predictions_by_priority
-from .utils.result_manager import ResultDir
+from rheed_segmentation.config.training_config import TrainingConfig
+from rheed_segmentation.utils import (
+    ResultDir,
+    compute_f1_from_confusion_matrix,
+    merge_masks_by_priority,
+    merge_predictions_by_priority,
+)
 
 
 class LossComputer:
@@ -85,7 +87,7 @@ class Trainer:
                 train_loss = self._train_one_epoch(epoch)
                 val_loss, cm = self._validate_one_epoch(epoch)
 
-                _, macro_f1 = utils.compute_f1_from_confusion_matrix(cm)
+                _, macro_f1 = compute_f1_from_confusion_matrix(cm)
 
                 epoch_info = {
                     "epoch": epoch,
