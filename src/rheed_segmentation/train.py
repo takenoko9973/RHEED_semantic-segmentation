@@ -84,10 +84,10 @@ class Trainer:
             for epoch in epoch_loop:
                 epoch_loop.set_description(f"[Epoch {epoch}, {self.save_dir.protocol}]")
 
-                train_loss = self._train_one_epoch(epoch)
-                val_loss, cm = self._validate_one_epoch(epoch)
+                train_loss, train_cm = self._train_one_epoch(epoch)
+                val_loss, val_cm = self._validate_one_epoch(epoch)
 
-                _, macro_f1 = compute_f1_from_confusion_matrix(cm)
+                _, macro_f1 = compute_f1_from_confusion_matrix(val_cm)
 
                 epoch_info = {
                     "epoch": epoch,
@@ -97,7 +97,7 @@ class Trainer:
                 }
                 epoch_loop.set_postfix(epoch_info)
 
-                self._save_metrics(epoch, train_loss, val_loss, cm.tolist())
+                self._save_metrics(epoch, train_loss, val_loss, train_cm.tolist(), val_cm.tolist())
 
                 if epoch % 20 == 0:
                     self._save_checkpoint(self.save_dir.path / f"epoch_{epoch}.pth")
@@ -110,8 +110,11 @@ class Trainer:
         finally:
             self._save_checkpoint(self.save_dir.path / "latest.pth")
 
-    def _train_one_epoch(self, epoch: int) -> float:  # noqa: ARG002
+    def _train_one_epoch(self, epoch: int) -> tuple[float, np.ndarray]:  # noqa: ARG002
         self.model.train()
+
+        num_classes = self.loss_computer.num_classes
+        cm = np.zeros((num_classes, num_classes), dtype=np.int64)
 
         total_loss = 0.0
         loop = tqdm(
@@ -131,13 +134,15 @@ class Trainer:
             outputs = self.model(images)
             loss, _ = self.loss_computer.compute(outputs, masks)
 
+            cm += self._compute_confusion_matrix(outputs, masks, num_classes)
+
             loss.backward()
             self.optimizer.step()
 
             total_loss += loss.item()
             loop.set_postfix({"loss": loss.item()})
 
-        return total_loss / len(self.train_loader)
+        return total_loss / len(self.train_loader), cm
 
     def _validate_one_epoch(self, epoch: int) -> tuple[float, np.ndarray]:  # noqa: ARG002
         self.model.eval()
@@ -186,11 +191,14 @@ class Trainer:
     def _save_checkpoint(self, path: Path) -> None:
         torch.save(self.model.state_dict(), path)
 
-    def _save_metrics(self, epoch: int, train_loss: float, val_loss: float, cm: list) -> None:
+    def _save_metrics(
+        self, epoch: int, train_loss: float, val_loss: float, train_cm: list, val_cm: list
+    ) -> None:
         record = {
             "epoch": epoch,
             "train_loss": train_loss,
             "validate_loss": val_loss,
-            "confusion_matrix": cm,
+            "train_confusion_matrix": train_cm,
+            "confusion_matrix": val_cm,
         }
         self.save_dir.write_history_file(record)
