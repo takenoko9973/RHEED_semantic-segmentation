@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 from albumentations.core.transforms_interface import BasicTransform
 from PIL import Image
@@ -41,3 +43,9 @@ class SegmentationDataset(Dataset):
                 mask: dict[str, np.ndarray] = {k: transformed[k] for k in mask}
 
         return image, mask
+
+    def save_dataset_list(self, save_path: Path) -> None:
+        with save_path.open("w", encoding="utf-8") as f:
+            f.write(
+                "\n".join([label_pair_path.image_path for label_pair_path in self.label_pair_paths])
+            )

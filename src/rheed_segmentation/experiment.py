@@ -1,6 +1,8 @@
+from torch.utils.data import DataLoader
+
 from rheed_segmentation.config import Configs, ExperimentConfig
 from rheed_segmentation.config.transform_config import TargetMode
-from rheed_segmentation.dataset import make_dataloaders
+from rheed_segmentation.dataset import obtain_datasets
 from rheed_segmentation.train import Trainer
 from rheed_segmentation.utils.other import init_random_seed
 from rheed_segmentation.utils.result_manager import ResultDateDir, ResultDirManager
@@ -22,14 +24,17 @@ def training_experiment(
     # データ取得
     train_transform = experiment_config.build_transform_compose(TargetMode.TRAIN)
     val_transform = experiment_config.build_transform_compose(TargetMode.VAL)
-    train_loader, val_loader = make_dataloaders(experiment_config, train_transform, val_transform)
+    train_dataset, val_dataset = obtain_datasets(experiment_config, train_transform, val_transform)
+    val_dataset.save_dataset_list(result_dir.path / "val_list.txt")
 
     # 学習
+    batch_size: int = experiment_config.training.batch_size
+    num_workers: int = experiment_config.training.num_workers
     trainer = Trainer(
         experiment_config.training,
         len(experiment_config.labels),
-        train_loader,
-        val_loader,
+        DataLoader(train_dataset, batch_size, num_workers, shuffle=True),
+        DataLoader(val_dataset, batch_size, num_workers, shuffle=False),
         result_dir,
     )
     trainer.train(experiment_config.training.epoch)
