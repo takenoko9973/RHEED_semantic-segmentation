@@ -1,18 +1,19 @@
 # comment: "U-Net, per_label, Dropout(TCB5-7)"
-comment: "U-Net、ラベルごと、STO(e-6,10), MgO(e-5 (half))、バックグラウンド損失 1/3"
-common_name: "test"
+comment: "U-Net++、STO(e-6,10), MgO(e-5), YBCO/STO(e-6)"
+common_name: "U-Net++,STO-0,10_MgO-0_YBCO-STO-0"
 
 data_dirs:
   - "SC-STO-250422/expo50_gain60/250425_900_fil-6_O2-0"
   - "SC-STO-250422/expo50_gain60/250424_900_fil-6_O2-10"
   - "SC-MgO-250430/expo50_gain60/250508_900_fil-7_O2-0"
+  - "AN-STO-B250508-3/expo50_gain60/250520_RT_fil-9_O2-0"
 
 labels:
   _background_: 0
   spot: 1
   streak: 2
   kikuchi: 3
-per_label: true
+per_label: false
 
 training:
   epoch: 300
@@ -20,8 +21,13 @@ training:
   model:
     name: "rheed_segmentation.model.UNet"
     params:
-      n_channels: 1
+      input_channels: 1
       n_classes: 4
+    # name: "rheed_segmentation.model.UNetPlusPlus"
+    # params:
+    #   input_channels: 1
+    #   n_classes: 4
+    #   deep_supervision: false
   criterion:
     name: "CrossEntropyLoss"
     # params:

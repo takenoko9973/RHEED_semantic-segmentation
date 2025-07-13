@@ -39,9 +39,9 @@ class UpConv(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, n_channels: int, n_classes: int) -> None:
+    def __init__(self, input_channels: int, n_classes: int) -> None:
         super().__init__()
-        self.TCB1 = DoubleConv(n_channels, 64, 64)
+        self.TCB1 = DoubleConv(input_channels, 64, 64)
         self.TCB2 = DoubleConv(64, 128, 128)
         self.TCB3 = DoubleConv(128, 256, 256)
         self.TCB4 = DoubleConv(256, 512, 512)

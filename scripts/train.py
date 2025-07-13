@@ -7,8 +7,8 @@ common_config_file = Path("configs", "common.yaml")
 
 config_files = [
     Path("configs", "raw.yaml"),
-    # Path("configs", "CLAHE.yaml"),
-    # Path("configs", "CLAHE_Gaussian.yaml"),
+    Path("configs", "CLAHE.yaml"),
+    Path("configs", "CLAHE_Gaussian.yaml"),
 ]
 
 
