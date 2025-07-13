@@ -34,7 +34,7 @@ class VGGBlock(nn.Module):
 class UNetPlusPlus(nn.Module):
     """UNet++モデル本体。入れ子構造と密なスキップ接続が特徴。"""
 
-    def __init__(self, input_channels: int, n_classes: int, deep_supervision: bool = False) -> None:
+    def __init__(self, n_channels: int, n_classes: int, deep_supervision: bool = False) -> None:
         super().__init__()
 
         self.deep_supervision = deep_supervision
@@ -46,7 +46,7 @@ class UNetPlusPlus(nn.Module):
 
         # 入れ子構造の各ノードを定義
         # x_00, x_10, ... というグリッド状の配置をイメージ
-        self.conv0_0 = VGGBlock(input_channels, nb_filter[0], nb_filter[0])
+        self.conv0_0 = VGGBlock(n_channels, nb_filter[0], nb_filter[0])
         self.conv1_0 = VGGBlock(nb_filter[0], nb_filter[1], nb_filter[1])
         self.conv2_0 = VGGBlock(nb_filter[1], nb_filter[2], nb_filter[2])
         self.conv3_0 = VGGBlock(nb_filter[2], nb_filter[3], nb_filter[3])
