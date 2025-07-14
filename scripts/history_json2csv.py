@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from rheed_segmentation.utils import compute_f1_from_confusion_matrix
+from rheed_segmentation.metrics import compute_f1_from_confusion_matrix
 
 result_root = Path("results")
 

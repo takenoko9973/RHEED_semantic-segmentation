@@ -2,7 +2,7 @@ from pathlib import Path
 
 import numpy as np
 from albumentations.core.transforms_interface import BasicTransform
-from PIL import Image
+from torch import Tensor
 from torch.utils.data import Dataset
 
 from .loader import ImageLabelLoader
@@ -26,26 +26,26 @@ class SegmentationDataset(Dataset):
     def __len__(self) -> int:
         return len(self.label_pair_paths)
 
-    def __getitem__(self, idx: int) -> tuple[Image.Image, np.ndarray | dict[str, np.ndarray]]:
+    def __getitem__(self, idx: int) -> tuple[Tensor, Tensor | dict[str, Tensor]]:
         image, mask = self.image_label_loader.load(self.label_pair_paths[idx])
 
         if self.transform:
             # マスクの形式 (単一 or 辞書) に応じてデータ拡張の適用方法を切り替える
             if isinstance(mask, np.ndarray):
                 transformed = self.transform(image=image, mask=mask)
-                image: Image = transformed["image"]
-                mask: np.ndarray = transformed["mask"]
+                image: Tensor = transformed["image"]
+                mask: Tensor = transformed["mask"]
             elif isinstance(mask, dict):
                 # albumentationsが複数のマスクを扱えるようにターゲットを追加
                 self.transform.add_targets(dict.fromkeys(mask, "mask"))
                 transformed = self.transform(image=image, **mask)
-                image: Image = transformed["image"]
-                mask: dict[str, np.ndarray] = {k: transformed[k] for k in mask}
+                image: Tensor = transformed["image"]
+                mask: dict[str, Tensor] = {k: transformed[k] for k in mask}
 
         return image, mask
 
     def save_dataset_list(self, save_path: Path) -> None:
+        json_paths = [str(label_pair_path.json_path) for label_pair_path in self.label_pair_paths]
+
         with save_path.open("w", encoding="utf-8") as f:
-            f.write(
-                "\n".join([label_pair_path.image_path for label_pair_path in self.label_pair_paths])
-            )
+            f.write("\n".join(json_paths))

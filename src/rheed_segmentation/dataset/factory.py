@@ -3,11 +3,21 @@ from pathlib import Path
 from albumentations.core.transforms_interface import BasicTransform
 
 from rheed_segmentation.config.experiment_config import ExperimentConfig
+from rheed_segmentation.dataset.path import LabelPairPath
 
 from .dataset import SegmentationDataset
 from .finder import collect_dataset_paths
 from .loader import ImageLabelLoader
 from .splitter import split_data
+
+
+def obtain_datasets_from_paths(
+    config: ExperimentConfig,
+    paths: list[LabelPairPath],
+    transform: BasicTransform | None = None,
+) -> SegmentationDataset:
+    imageloader = ImageLabelLoader(config.labels, generate_per_labels=config.per_label)
+    return SegmentationDataset(paths, imageloader, transform=transform)
 
 
 def obtain_datasets(

@@ -25,6 +25,7 @@ def training_experiment(
     train_transform = experiment_config.build_transform_compose(TargetMode.TRAIN)
     val_transform = experiment_config.build_transform_compose(TargetMode.VAL)
     train_dataset, val_dataset = obtain_datasets(experiment_config, train_transform, val_transform)
+    train_dataset.save_dataset_list(result_dir.path / "train_list.txt")
     val_dataset.save_dataset_list(result_dir.path / "val_list.txt")
 
     # 学習
@@ -33,8 +34,8 @@ def training_experiment(
     trainer = Trainer(
         experiment_config.training,
         len(experiment_config.labels),
-        DataLoader(train_dataset, batch_size, num_workers, shuffle=True),
-        DataLoader(val_dataset, batch_size, num_workers, shuffle=False),
+        DataLoader(train_dataset, batch_size, shuffle=True, num_workers=num_workers),
+        DataLoader(val_dataset, batch_size, shuffle=False, num_workers=num_workers),
         result_dir,
     )
     trainer.train(experiment_config.training.epoch)

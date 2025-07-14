@@ -2,18 +2,15 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from sklearn.metrics import confusion_matrix
 from torch import Tensor
 from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from rheed_segmentation.config.training_config import TrainingConfig
+from rheed_segmentation.metrics import compute_confusion_matrix, compute_f1_from_confusion_matrix
 from rheed_segmentation.utils import (
     ResultDir,
-    compute_f1_from_confusion_matrix,
-    merge_masks_by_priority,
-    merge_predictions_by_priority,
 )
 
 
@@ -134,7 +131,7 @@ class Trainer:
             outputs = self.model(images)
             loss, _ = self.loss_computer.compute(outputs, masks)
 
-            cm += self._compute_confusion_matrix(outputs, masks, num_classes)
+            cm += compute_confusion_matrix(outputs, masks, num_classes)
 
             loss.backward()
             self.optimizer.step()
@@ -163,30 +160,12 @@ class Trainer:
                 outputs = self.model(images)
                 loss, _ = self.loss_computer.compute(outputs, masks)
 
-                cm += self._compute_confusion_matrix(outputs, masks, num_classes)
+                cm += compute_confusion_matrix(outputs, masks, num_classes)
 
                 total_loss += loss.item()
                 loop.set_postfix({"loss": loss.item()})
 
         return total_loss / len(self.val_loader), cm
-
-    def _compute_confusion_matrix(
-        self, outputs: Tensor, masks: Tensor | dict[str, Tensor], num_classes: int
-    ) -> np.ndarray:
-        probs = torch.softmax(outputs, dim=1)
-
-        if isinstance(masks, dict):
-            true_labels = merge_masks_by_priority(masks)
-            preds = merge_predictions_by_priority(probs)
-        else:
-            true_labels = masks
-            preds = torch.argmax(probs, dim=1)
-
-        return confusion_matrix(
-            true_labels.view(-1).cpu().numpy(),
-            preds.view(-1).cpu().numpy(),
-            labels=list(range(num_classes)),
-        )
 
     def _save_checkpoint(self, path: Path) -> None:
         torch.save(self.model.state_dict(), path)
