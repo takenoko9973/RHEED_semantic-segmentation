@@ -19,6 +19,7 @@ def compute_f1_scores(cm: pd.Series) -> dict[str, pd.Series]:
     )
 
     return {
+        "Back ground": calculate_moving_average(protocol_df["f1"].apply(lambda arr: arr[0]), 5),
         "Spot": calculate_moving_average(protocol_df["f1"].apply(lambda arr: arr[1]), 5),
         "Streak": calculate_moving_average(protocol_df["f1"].apply(lambda arr: arr[2]), 5),
         "Kikuchi": calculate_moving_average(protocol_df["f1"].apply(lambda arr: arr[3]), 5),
@@ -48,13 +49,17 @@ def _plot_f1_graph(epoch_series: pd.Series, f1_dict: dict[str, pd.Series], plot_
     # プロット
     plt.rcParams["lines.linewidth"] = 2
     colors = {
+        "Back ground": "#000000",
         "Spot": "#DD0806",
         "Streak": "#008000",
         "Kikuchi": "#f2bf01",
         "Macro-F1": "#000000",
     }
     for label, color in colors.items():
-        ax.plot(epoch_series, f1_dict[label], label=label, color=color)
+        if label != "Macro-F1":
+            ax.plot(epoch_series, f1_dict[label], label=label, color=color)
+        else:
+            ax.plot(epoch_series, f1_dict[label], "--", label=label, color=color)
 
     # 凡例
     ax.legend(
