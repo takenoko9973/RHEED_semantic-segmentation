@@ -1,26 +1,31 @@
 from pathlib import Path
 
-from rheed_segmentation.config.experiment_config import Configs
-from rheed_segmentation.experiment import training_experiments
+from rheed_segmentation.core import start_experiment
 
-common_config_file = Path("configs", "common.yaml")
+common_config_path = Path("configs", "common.yaml")
 
-config_files = [
+config_paths = [
     # Path("configs", "raw.yaml"),
-    Path("configs", "CLAHE.yaml"),
-    Path("configs", "CLAHE_Gaussian.yaml"),
+    # Path("configs", "CLAHE.yaml"),
+    # Path("configs", "CLAHE_Gaussian.yaml"),
 ]
 
 
-def main(config_files: list[Path]) -> None:
-    configs = Configs.model_validate(
-        {
-            "config_paths": config_files,
-            "common_config_path": common_config_file,
-        }
-    )
-    training_experiments(configs)
+config_paths = [
+    Path("configs", "weight/CLAHE-1.0.yaml"),
+    Path("configs", "weight/CLAHE-0.5.yaml"),
+    Path("configs", "weight/CLAHE-0.2.yaml"),
+    Path("configs", "weight/CLAHE-0.1.yaml"),
+    Path("configs", "weight/CLAHE-0.01.yaml"),
+    Path("configs", "weight/CLAHE-10.yaml"),
+    Path("configs", "weight/CLAHE-100.yaml"),
+    Path("configs", "weight/CLAHE_plot-count.yaml"),
+]
+
+
+def main() -> None:
+    start_experiment(config_paths, common_config_path)
 
 
 if __name__ == "__main__":
-    main(config_files)
+    main()

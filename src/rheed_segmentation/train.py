@@ -7,7 +7,7 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from rheed_segmentation.config.training_config import TrainingConfig
+from rheed_segmentation.config import TrainingConfig
 from rheed_segmentation.metrics import compute_confusion_matrix, compute_f1_from_confusion_matrix
 from rheed_segmentation.utils import (
     ResultDir,

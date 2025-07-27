@@ -2,7 +2,7 @@ from pathlib import Path
 
 from albumentations.core.transforms_interface import BasicTransform
 
-from rheed_segmentation.config.experiment_config import ExperimentConfig
+from rheed_segmentation.config import ProtocolConfig
 from rheed_segmentation.dataset.path import LabelPairPath
 
 from .dataset import SegmentationDataset
@@ -12,7 +12,7 @@ from .splitter import split_data
 
 
 def obtain_datasets_from_paths(
-    config: ExperimentConfig,
+    config: ProtocolConfig,
     paths: list[LabelPairPath],
     transform: BasicTransform | None = None,
 ) -> SegmentationDataset:
@@ -21,7 +21,7 @@ def obtain_datasets_from_paths(
 
 
 def obtain_datasets(
-    config: ExperimentConfig,
+    config: ProtocolConfig,
     train_transform: BasicTransform | None = None,
     val_transform: BasicTransform | None = None,
 ) -> tuple[SegmentationDataset, SegmentationDataset]:

@@ -12,12 +12,12 @@ from rheed_segmentation.utils import resolve_class
 from .core import BaseConfig
 
 
-class _BaseComponentConfig(BaseConfig):
+class _BaseComponent(BaseConfig):
     name: str
     params: dict[str, Any] = Field(default_factory=dict)
 
 
-class ModelConfig(_BaseComponentConfig):
+class ModelConfig(_BaseComponent):
     def build(self) -> nn.Module:
         cls = resolve_class(self.name)
 
@@ -28,7 +28,7 @@ class ModelConfig(_BaseComponentConfig):
         return cls(**self.params)
 
 
-class CriterionConfig(_BaseComponentConfig):
+class CriterionConfig(_BaseComponent):
     def build(self) -> loss._Loss:
         cls = resolve_class(self.name, default_module=loss)
 
@@ -38,7 +38,7 @@ class CriterionConfig(_BaseComponentConfig):
         return cls(**self.params)
 
 
-class OptimizerConfig(_BaseComponentConfig):
+class OptimizerConfig(_BaseComponent):
     def build(self, model: nn.Module) -> Optimizer:
         cls = resolve_class(self.name, default_module=optim)
 
@@ -49,7 +49,7 @@ class OptimizerConfig(_BaseComponentConfig):
         return cls(params=model.parameters(), **self.params)
 
 
-class SchedulerConfig(_BaseComponentConfig):
+class SchedulerConfig(_BaseComponent):
     def build(self, optimizer: Optimizer) -> LRScheduler:
         cls = resolve_class(self.name, default_module=optim.lr_scheduler)
 
