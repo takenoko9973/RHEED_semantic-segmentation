@@ -1,6 +1,6 @@
 # https://github.com/anibali/docker-pytorch/tree/master
 
-FROM ubuntu:22.04 as installer
+FROM ubuntu:22.04 AS installer
 
 # Remove any third-party apt sources to avoid issues with expiring keys.
 RUN rm -f /etc/apt/sources.list.d/*.list
@@ -23,13 +23,27 @@ FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
 RUN rm -f /etc/apt/sources.list.d/*.list
 
+RUN echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections
 RUN DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
     apt-get install --no-install-recommends -y \
         git \
-        p7zip-full && \
+        wget \
+        p7zip-full \
+        fontconfig \
+        ttf-mscorefonts-installer && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+ARG FONT_FOLDER="/usr/share/fonts"
+WORKDIR ${FONT_FOLDER}
+RUN wget -q https://github.com/trueroad/HaranoAjiFonts/raw/refs/heads/master/HaranoAjiGothic-Bold.otf; \
+    wget -q https://github.com/trueroad/HaranoAjiFonts/raw/refs/heads/master/HaranoAjiMincho-Bold.otf; \
+    wget -q https://github.com/trueroad/HaranoAjiFonts/raw/refs/heads/master/HaranoAjiGothic-Regular.otf; \
+    wget -q https://github.com/trueroad/HaranoAjiFonts/raw/refs/heads/master/HaranoAjiMincho-Regular.otf; \
+    wget -q https://github.com/trueroad/HaranoAjiFonts/raw/refs/heads/master/HaranoAjiGothic-Light.otf; \
+    wget -q https://github.com/trueroad/HaranoAjiFonts/raw/refs/heads/master/HaranoAjiMincho-Light.otf; \
+    fc-cache -fv;
 
 # Create a working directory.
 RUN mkdir /app
@@ -50,5 +64,6 @@ RUN micromamba create -qy -n base -f /app/environment.yml \
 
 # # Fix for https://github.com/pytorch/pytorch/issues/97041
 RUN ln -s "$CONDA_PREFIX/lib/libnvrtc.so.*.*.*" "$CONDA_PREFIX/lib/libnvrtc.so"
+
 
 CMD ["bash"]
