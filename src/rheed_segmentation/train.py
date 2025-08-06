@@ -60,11 +60,11 @@ class Trainer:
         self.config = config
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.model = self.config.model.to(self.device)
+        self.model = self.config.build_model().to(self.device)
 
-        self.criterion = config.criterion.to(self.device)
-        self.optimizer = config.optimizer
-        self.scheduler = config.scheduler
+        self.criterion = config.build_criterion().to(self.device)
+        self.optimizer = config.build_optimizer(self.model)
+        self.scheduler = config.build_scheduler(self.scheduler)
 
         self.train_loader = train_loader
         self.val_loader = val_loader

@@ -69,35 +69,17 @@ class TrainingConfig(BaseConfig):
     scheduler_config: SchedulerConfig | None = Field(default=None, alias="scheduler")
     num_workers: int = Field(default=4, ge=1)
 
-    @property
-    def model(self) -> nn.Module:
-        if not hasattr(self, "_model_instance"):
-            self._model_instance = self.train_model_config.build()
+    def build_model(self) -> nn.Module:
+        return self.train_model_config.build()
 
-        return self._model_instance
+    def build_criterion(self) -> loss._Loss:
+        return self.criterion_config.build()
 
-    @property
-    def criterion(self) -> loss._Loss:
-        if not hasattr(self, "_criterion_instance"):
-            self._criterion_instance = self.criterion_config.build()
+    def build_optimizer(self, model: nn.Module) -> Optimizer:
+        return self.optimizer_config.build(model)
 
-        return self._criterion_instance
+    def build_scheduler(self, optimizer: Optimizer) -> LRScheduler | None:
+        if self.scheduler_config:
+            return self.scheduler_config.build(optimizer)
 
-    @property
-    def optimizer(self) -> Optimizer:
-        if not hasattr(self, "_optimizer_instance"):
-            # model プロパティ経由でビルドされたインスタンスを利用
-            self._optimizer_instance = self.optimizer_config.build(self.model)
-
-        return self._optimizer_instance
-
-    @property
-    def scheduler(self) -> LRScheduler | None:
-        if not hasattr(self, "_scheduler_instance"):
-            if self.scheduler_config:
-                # optimizer プロパティ経由でビルドされたインスタンスを利用
-                self._scheduler_instance = self.scheduler_config.build(self.optimizer)
-            else:
-                self._scheduler_instance = None
-
-        return self._scheduler_instance
+        return None

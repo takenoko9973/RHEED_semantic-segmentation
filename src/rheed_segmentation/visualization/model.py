@@ -7,7 +7,7 @@ from rheed_segmentation.utils.postprocessing import merge_predictions_by_priorit
 
 
 def load_model(model_path: Path, training_config: TrainingConfig) -> torch.nn.Module:
-    model = training_config.model
+    model = training_config.build_model()
     model.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
     model.eval()
     return model
