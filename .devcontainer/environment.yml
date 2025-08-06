@@ -34,11 +34,9 @@ dependencies:
     - pytorch=2.4
     - pytorch-cuda=12.4
     - torchvision=0.19
-    - skorch=1.0
-    - botorch=0.12
-    - timm>=1.0.14
+    - segmentation-models-pytorch=0.5.0
 
     - albumentations
 
     - pip:
-        - labelme
+          - labelme
