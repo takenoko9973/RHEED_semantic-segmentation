@@ -64,7 +64,7 @@ class Trainer:
 
         self.criterion = config.build_criterion().to(self.device)
         self.optimizer = config.build_optimizer(self.model)
-        self.scheduler = config.build_scheduler(self.scheduler)
+        self.scheduler = config.build_scheduler(self.optimizer)
 
         self.train_loader = train_loader
         self.val_loader = val_loader
