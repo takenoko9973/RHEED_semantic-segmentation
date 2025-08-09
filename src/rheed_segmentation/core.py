@@ -35,7 +35,7 @@ def training_protocol(protocol_config: ProtocolConfig, result_date_dir: ResultDa
     # 設定保存
     protocol_config.save_config(result_dir.path / "config.yaml")
 
-    # データ取得s
+    # データ取得
     train_transform = protocol_config.build_transform_compose(TargetMode.TRAIN)
     val_transform = protocol_config.build_transform_compose(TargetMode.VAL)
     train_dataset, val_dataset = obtain_datasets(protocol_config, train_transform, val_transform)
