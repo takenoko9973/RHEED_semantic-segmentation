@@ -34,13 +34,13 @@ class SegmentationDataset(Dataset):
             if isinstance(mask, np.ndarray):
                 transformed = self.transform(image=image, mask=mask)
                 image: Tensor = transformed["image"]
-                mask: Tensor = transformed["mask"]
+                mask: Tensor = transformed["mask"].long()
             elif isinstance(mask, dict):
                 # albumentationsが複数のマスクを扱えるようにターゲットを追加
                 self.transform.add_targets(dict.fromkeys(mask, "mask"))
                 transformed = self.transform(image=image, **mask)
                 image: Tensor = transformed["image"]
-                mask: dict[str, Tensor] = {k: transformed[k] for k in mask}
+                mask: dict[str, Tensor] = {k: transformed[k].long() for k in mask}
 
         return image, mask
 
