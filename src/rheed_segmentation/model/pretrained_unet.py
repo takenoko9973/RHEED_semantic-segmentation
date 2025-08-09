@@ -9,6 +9,7 @@ class PretrainedUNet(nn.Module):
         encoder_weights: str | None = "imagenet",
         n_channels: int = 1,
         n_classes: int = 4,
+        encoder_freeze: bool = False,
     ) -> None:
         super().__init__()
 
@@ -19,9 +20,11 @@ class PretrainedUNet(nn.Module):
             in_channels=n_channels,
             classes=n_classes,
         )
-        # from segmentation_models_pytorch.encoders import get_preprocessing_fn
 
-        # preprocess_input = get_preprocessing_fn("resnet18", pretrained="imagenet")
+        if encoder_freeze:
+            # エンコーダーのパラメータを凍結
+            for param in self.model.encoder.parameters():
+                param.requires_grad = False
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)
