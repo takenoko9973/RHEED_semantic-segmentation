@@ -26,24 +26,22 @@ class Transform(BaseConfig):
             raise ValueError(msg) from e
 
 
-class TransformGroup(BaseConfig):
+class TransformPipelines(BaseConfig):
     base: list[Transform] = Field(default_factory=list)
     augmentations: list[Transform] = Field(default_factory=list)
     final: list[Transform] = Field(default_factory=list)
 
-    def build_transform_compose(self) -> albu.Compose:
+    def _build_transform_compose(self, mode: str) -> albu.Compose:
         base_transforms = [trans.build_transform() for trans in self.base]
-        aug_transforms = [trans.build_transform() for trans in self.augmentations]
+        aug_transforms = (
+            [trans.build_transform() for trans in self.augmentations] if (mode == "train") else []
+        )
         final_transforms = [trans.build_transform() for trans in self.final]
+
         return albu.Compose([*base_transforms, *aug_transforms, *final_transforms])
 
-
-class TransformPipelines(BaseConfig):
-    train: TransformGroup
-    val: TransformGroup
-
     def build_train_trainsform_compose(self) -> albu.Compose:
-        return self.train.build_transform_compose()
+        return self._build_transform_compose("train")
 
     def build_val_trainsform_compose(self) -> albu.Compose:
-        return self.val.build_transform_compose()
+        return self._build_transform_compose("validation")

@@ -31,20 +31,46 @@ class V1Adapter(IConfigAdapter):
                 "augmentations": [
                     transform
                     for transform in old_transforms
-                    if transform.get("target", TargetMode._BOTH)  # noqa: SLF001
-                    in (TargetMode._BOTH, TargetMode.TRAIN)  # noqa: SLF001
+                    if transform.get("target", TargetMode._BOTH.value)  # noqa: SLF001
+                    == TargetMode.TRAIN.value
                 ],
-                "final": [],
+                "final": [
+                    transform
+                    for transform in old_transforms
+                    if transform.get("target", TargetMode._BOTH.value)  # noqa: SLF001
+                    == TargetMode._BOTH.value  # noqa: SLF001
+                ],
             },
             "val": {
                 "base": [],
-                "augmentations": [
+                "augmentations": [],
+                "final": [
                     transform
                     for transform in old_transforms
-                    if transform.get("target", TargetMode._BOTH)  # noqa: SLF001
-                    in (TargetMode._BOTH, TargetMode.VAL)  # noqa: SLF001
+                    if transform.get("target", TargetMode._BOTH.value)  # noqa: SLF001
+                    in (TargetMode._BOTH.value, TargetMode.VAL.value)  # noqa: SLF001
                 ],
-                "final": [],
             },
+        }
+        return adapted_dict
+
+
+class V2Adapter(IConfigAdapter):
+    """バージョン2形式を、バージョン3形式に変換するアダプター。"""
+
+    def adapt(self, config_dict: dict[str, Any]) -> dict[str, Any]:
+        print("V2Adapter: v2形式をv3形式へ変換します...")
+
+        # 変換ロジック
+        adapted_dict = config_dict.copy()
+
+        # v1の'transform'キーは、実質的に学習時のデータ拡張に相当
+        old_transforms: list[dict] = adapted_dict.pop("transforms", [])
+
+        # v2のスキーマ構造に合わせて辞書を再構築
+        adapted_dict["transforms"] = {
+            "base": old_transforms["train"]["base"],
+            "augmentations": old_transforms["train"]["augmentations"],
+            "final": old_transforms["train"]["final"],
         }
         return adapted_dict

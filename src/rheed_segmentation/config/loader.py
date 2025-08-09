@@ -3,13 +3,14 @@ from typing import Any
 
 import yaml
 
-from .adapter import IConfigAdapter, V1Adapter
+from .adapter import IConfigAdapter, V1Adapter, V2Adapter
 from .schema import ProtocolConfig
 
 ADAPTER_MAP: dict[int, IConfigAdapter] = {
     1: V1Adapter(),
+    2: V2Adapter(),
 }
-LATEST_VERSION = 2
+LATEST_VERSION = 3
 
 
 def _merge_dicts(base: dict, override: dict) -> dict:
