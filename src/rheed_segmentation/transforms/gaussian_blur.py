@@ -6,7 +6,7 @@ from albumentations.core.transforms_interface import ImageOnlyTransform
 
 
 class GaussianBlur(ImageOnlyTransform):
-    def __init__(self, ksize: float = (3, 3), sigma: float = -1, p: float = 1.0) -> None:
+    def __init__(self, ksize: float = (3, 3), sigma: float = -1, p: float = 0.5) -> None:
         super().__init__(p=p)
 
         self.ksize = ksize

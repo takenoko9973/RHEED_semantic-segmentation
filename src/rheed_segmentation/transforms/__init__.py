@@ -1,3 +1,4 @@
 from .auto_scale import AutoScaleTransform
 from .clahe import CLAHE
 from .gaussian_blur import GaussianBlur
+from .gaussian_noise import GaussianNoise
