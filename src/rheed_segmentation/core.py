@@ -7,7 +7,7 @@ from rheed_segmentation.config import ProtocolConfig, TargetMode, load_multiple_
 from rheed_segmentation.dataset import obtain_datasets
 from rheed_segmentation.train import Trainer
 from rheed_segmentation.utils.other import init_random_seed
-from rheed_segmentation.utils.result_manager import ResultDateDir, ResultDirManager
+from rheed_segmentation.utils.result_manager import ResultDateDir, ResultDir, ResultDirManager
 
 
 def _save_common_config(common_config_path: Path, result_date_dir: ResultDateDir) -> None:
@@ -23,17 +23,14 @@ def _save_common_config(common_config_path: Path, result_date_dir: ResultDateDir
             del common_config_dict
 
 
-def training_protocol(protocol_config: ProtocolConfig, result_date_dir: ResultDateDir) -> None:
+def training_protocol(protocol_config: ProtocolConfig, result_dir: ResultDir) -> None:
     print(f"protocol: {protocol_config.protocol}, comment: {protocol_config.comment}")
 
     # トレーニング開始前に乱数リセット
     init_random_seed(917)
 
-    # 学習モデル保存先作成
-    result_dir = result_date_dir.create_protocol_dir(protocol=protocol_config.protocol)
-
     # 設定保存
-    protocol_config.save_config(result_dir.path / "config.yaml")
+    protocol_config.save_config(result_dir.config_path)
 
     # データ取得
     train_transform = protocol_config.build_transform_compose(TargetMode.TRAIN)
@@ -56,9 +53,12 @@ def training_protocol(protocol_config: ProtocolConfig, result_date_dir: ResultDa
 
 
 def start_experiment(
-    config_paths: list[Path],
+    config_paths: list[Path] | Path,
     common_config_path: Path | None = None,
 ) -> None:
+    if isinstance(config_paths, Path):
+        config_paths = [config_paths]
+
     if len(config_paths) == 0:
         msg = "1つ以上の設定ファイルを入力してください"
         raise ValueError(msg)
@@ -70,5 +70,7 @@ def start_experiment(
 
     _save_common_config(common_config_path, result_date_dir)
 
-    for protocol_config in protocol_configs:
-        training_protocol(protocol_config, result_date_dir)
+    for protocol_config, config_path in zip(protocol_configs, config_paths, strict=True):
+        # 学習モデル保存先作成
+        result_dir = result_date_dir.create_protocol_dir(protocol=config_path.stem)
+        training_protocol(protocol_config, result_dir)

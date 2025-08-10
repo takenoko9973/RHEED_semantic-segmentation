@@ -33,6 +33,10 @@ class ResultDir:
     def history_path(self) -> Path:
         return self.path / "history.jsonl"
 
+    @property
+    def config_path(self) -> Path:
+        return self.path / "config.yaml"
+
 
 class ResultDateDir:
     DATE_FORMAT = "%Y%m%d%H%M%S"
