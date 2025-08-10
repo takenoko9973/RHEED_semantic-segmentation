@@ -22,7 +22,9 @@ class V1Adapter(IConfigAdapter):
         adapted_dict = config_dict.copy()
 
         # v1の'transform'キーは、実質的に学習時のデータ拡張に相当
-        old_transforms: list[dict] = adapted_dict.pop("transforms", [])
+        old_transforms: dict | list[dict] = adapted_dict.pop("transforms", [])
+        if isinstance(old_transforms, dict):
+            old_transforms: list[dict] = old_transforms.get("transform_configs", [])
 
         # v2のスキーマ構造に合わせて辞書を再構築
         adapted_dict["transforms"] = {
