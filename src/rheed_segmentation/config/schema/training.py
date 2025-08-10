@@ -34,6 +34,9 @@ class CriterionConfig(_BaseComponent):
 
         if "weight" in self.params:
             self.params["weight"] = torch.Tensor(self.params["weight"])
+            self.params["weight"] = (
+                self.params["weight"] / sum(self.params["weight"]) * len(self.params["weight"])
+            )
 
         return cls(**self.params)
 
